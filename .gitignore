@@ -1,6 +1,7 @@
 # macOS hidden file
 .DS_Store
 .gradle/
+.vscode/
 .idea/
 bin/
 build/
