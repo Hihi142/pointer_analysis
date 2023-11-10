@@ -6,7 +6,7 @@
 
 [一些基本的class && 程序的IR ](https://tai-e.pascal-lab.net/docs/current/reference/en/program-abstraction.html)
 
-一些**远程的**git指令：
+### 关于github的远程操作
 
 ```bash
 git remote add origin https://github.com/Hihi142/pointer_analysis.git
@@ -23,8 +23,29 @@ git push origin <branch-name>
 //这个命令将本地当前branch推送到远程仓库<branch-name>, default = "main"
 
 git pull
-git pull <remote_name> <branch_name>
+git pull origin <branch_name>
 //这个命令可以拉取远程仓库<branch-name>的修改到本地当前branch, 不输入default = "main"
 ```
 
-Last modified: Xusheng Zhi, Nov. 10
+### 关于评测
+
+似乎需要安装docker，我装上并且跑起来了，运行截图如下：
+
+```bash
+== 当前评测机负载: 0.2 / 8
+
+== 评测环境：
+...
+pku-pta finishes, elapsed time: 0.05s
+Tai-e finishes, elapsed time: 3.47s
+    输出：{1: {1, 2, 3}, 2: {1, 2, 3}, 3: {1, 2, 3}}
+    答案：{1: {1, 2}, 2: {2}, 3: {3}}
+    分数：1.58 ('sound', 9, 4)
+
+Traceback (most recent call last):
+  File "/root/main.py", line 229, in <module>
+    assert score>=1.99999, f'未通过公开测试用例 {b[0]}'
+AssertionError: 未通过公开测试用例 Hello
+```
+
+本地下发的只有两个trivial的样例，我们恐怕需要造更多的样例 / 充分利用平台上的不公开样例优化算法
