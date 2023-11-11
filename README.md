@@ -49,3 +49,10 @@ AssertionError: 未通过公开测试用例 Hello
 ```
 
 本地下发的只有两个trivial的样例，我们恐怕需要造更多的样例 / 充分利用平台上的不公开样例优化算法
+
+## How to Obtain Runnable Jar of Tai-e?
+
+The simplest way is to download it from [GitHub Releases](https://github.com/pascal-lab/Tai-e/releases).
+
+Alternatively, you might build the latest Tai-e yourself from the source code. This can be simply accomplished via Gradle (be sure that Java 17 (or higher version) is available on your system).
+You just need to run command `gradlew fatJar`, and then the runnable jar will be generated in `tai-e/build/`, which includes Tai-e and all its dependencies.
