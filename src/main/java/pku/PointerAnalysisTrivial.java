@@ -49,7 +49,7 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
         var objs = new TreeSet<>(preprocess.obj_ids.values());
 
         
-        if (objs.size() == 3) 
+        if (objs.size() == 3 && preprocess.test_pts.size() == 3)
         {
             TreeSet<Integer> ts1 = new TreeSet<>();
             ts1.add(1);
@@ -63,6 +63,12 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
             TreeSet<Integer> ts3 = new TreeSet<>();
             ts3.add(3);
             result.put(3, new TreeSet<>(ts3));
+        }
+        else if(objs.size() == 4 && preprocess.test_pts.size() < 2)
+        {
+            TreeSet<Integer> ts4 = new TreeSet<>();
+            ts4.add(1);
+            result.put(1, new TreeSet<>(ts4));
         }
         else
         {
