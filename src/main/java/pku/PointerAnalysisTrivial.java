@@ -11,11 +11,17 @@ import pascal.taie.World;
 import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.analysis.misc.IRDumper;
 import pascal.taie.config.AnalysisConfig;
+import pascal.taie.ir.IR;
+import pascal.taie.ir.IRPrinter;
+import pascal.taie.ir.exp.IntLiteral;
+import pascal.taie.ir.exp.InvokeStatic;
+import pascal.taie.ir.stmt.Invoke;
+import pascal.taie.ir.stmt.New;
 
 
 public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResult> {
     public static final String ID = "pku-pta-trivial";
-    static int call_num = 0;
+    
     private static final Logger logger = LogManager.getLogger(IRDumper.class);
 
     /**
@@ -30,6 +36,24 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
         }
     }
 
+    public void dump_method(IR ir) {
+        var stmts = ir.getStmts();
+        for (var stmt : stmts) {
+            logger.info("        " + IRPrinter.toString(stmt));
+            if(stmt instanceof Invoke)
+                logger.info("        // Calling ID: " + Integer.toString(((Invoke)stmt).call_id));
+        }
+    }
+    public void dump_whole() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            logger.info("Dumping class {}", jclass.getName());
+            jclass.getDeclaredMethods().forEach(method->{
+                logger.info("    Dumping method {}", method.getName());
+                if(!method.isAbstract())
+                    dump_method(method.getIR());
+            });
+        });
+    }
     @Override
     public PointerAnalysisResult analyze() {
         var preprocess = new PreprocessResult(); 
@@ -44,7 +68,7 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
                     preprocess.analysis(method.getIR());
             });
         });
-
+        dump_whole();
         
         var objs = new TreeSet<>(preprocess.obj_ids.values());
 
