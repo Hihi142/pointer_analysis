@@ -3,20 +3,26 @@ package pku;
 
 import java.util.HashMap;
 
+import pascal.taie.World;
 import pascal.taie.ir.IR;
 import pascal.taie.ir.exp.IntLiteral;
 import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
-
+import pascal.taie.ir.stmt.Stmt;
 import java.util.Map;
+import java.util.ArrayList;
 
 public class PreprocessResult {
     
     public final Map<New, Integer> obj_ids;
     public final Map<Integer, Var> test_pts;
     static int call_num = 0;
+    static int stmt_num = 0;
+
+    public Stmt stmt_list[];
+    public ArrayList<Integer>suf[];
 
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
@@ -64,11 +70,11 @@ public class PreprocessResult {
      * analysis of a JMethod, the result storing in this
      * @param ir ir of a JMethod
      */
-    public void analysis(IR ir) {
+    public void count_stmts_method(IR ir) {
         var stmts = ir.getStmts();
         Integer id = 0;
         for (var stmt : stmts) {
-
+            stmt.set_stmt_id(stmt_num++);
             if(stmt instanceof Invoke)
             {
                 ((Invoke)stmt).call_id = ++call_num;
@@ -105,5 +111,34 @@ public class PreprocessResult {
                     this.alloc((New)stmt, id);
             }
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void label_stmts() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            jclass.getDeclaredMethods().forEach(method->{
+                if(!method.isAbstract())
+                    count_stmts_method(method.getIR());
+            });
+        });
+        stmt_list = new Stmt[stmt_num];
+        
+        suf = new ArrayList[stmt_num];
+
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            jclass.getDeclaredMethods().forEach(method->{
+                if(!method.isAbstract()){
+                    var ir = method.getIR();
+                    var stmts = ir.getStmts();
+                    for(var stmt: stmts) {
+                        int idx = stmt.get_stmt_id();
+                        stmt_list[idx] = stmt;
+                    }
+                }
+            });
+        });
+    }
+    public void init() {
+        label_stmts();
     }
 }

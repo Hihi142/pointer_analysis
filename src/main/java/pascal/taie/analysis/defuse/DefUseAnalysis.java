@@ -62,6 +62,7 @@ public class DefUseAnalysis extends MethodAnalysis<DefUse> {
     }
 
     @Override
+    @SuppressWarnings("unlikely-arg-type")
     public DefUse analyze(IR ir) {
         DataflowResult<Stmt, SetFact<Stmt>> rdResult = ir.getResult(ReachingDefinition.ID);
         TwoKeyMultiMap<Stmt, Var, Stmt> defs = computeDefs ?

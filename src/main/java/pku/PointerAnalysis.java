@@ -19,7 +19,6 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         var main = world.getMainMethod();
         var jclass = main.getDeclaringClass();
 
-        // TODO
         // You need to use `preprocess` like in PointerAnalysisTrivial
         // when you enter one method to collect infomation given by
         // Benchmark.alloc(id) and Benchmark.test(id, var)

@@ -34,6 +34,10 @@ abstract class AbstractStmt implements Stmt {
 
     protected int lineNumber = -1;
 
+    public int stmt_id = 0;
+    public int get_stmt_id() { return stmt_id; }
+    public void set_stmt_id(int x) { stmt_id = x; }
+
     @Override
     public int getIndex() {
         return index;

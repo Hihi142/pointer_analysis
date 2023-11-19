@@ -60,14 +60,10 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
         // 遍历程序，收集全部的测试点数据
 
         var result = new PointerAnalysisResult();
+        preprocess.init();
+        
 
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            logger.info("Analyzing class {}", jclass.getName());
-            jclass.getDeclaredMethods().forEach(method->{
-                if(!method.isAbstract())
-                    preprocess.analysis(method.getIR());
-            });
-        });
+        
         dump_whole();
         
         var objs = new TreeSet<>(preprocess.obj_ids.values());

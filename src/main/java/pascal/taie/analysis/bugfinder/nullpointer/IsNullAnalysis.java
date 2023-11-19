@@ -172,7 +172,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                 resultFact.downgradeOnControlSplit();
             }
             // 2. downgrade NULL&NSP to do_not_report value for two special exceptions
-            // TODO: should our null value add an exception property?
             if (edge.getKind() == CFGEdge.Kind.CAUGHT_EXCEPTION) {
                 resultFact = nodeFact.copy();
                 for (ClassType classType : edge.getExceptions()) {
@@ -187,7 +186,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                 }
             } else if (edge.getKind() == CFGEdge.Kind.IF_TRUE || edge.getKind() == CFGEdge.Kind.IF_FALSE) {
                 // 3. use null comparison information
-                // TODO: handle instanceof operand?
                 IsNullConditionDecision decision = nodeFact.getDecision();
                 if (decision != null) {
                     if (!decision.isEdgeFeasible(edge.getKind())) {
@@ -202,7 +200,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                             assert decisionValue != null;
 
                             resultFact = nodeFact.copy();
-                            // TODO: use pta to update more variable
                             resultFact.update(varTested, decisionValue);
 //                            if (decisionValue.isDefinitelyNull()) {
 //
@@ -225,7 +222,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                     } else if (!derefVal.isDefinitelyNotNull()) {
                         // update the null value for the dereferenced value.
                         resultFact = nodeFact.copy();
-                        // TODO: use pta to update more Var
                         resultFact.update(derefVar, IsNullValue.NO_KABOOM_NN);
                     }
                 }
@@ -277,7 +273,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                             "org.checkerframework.checker.nullness.compatqual.NullableDecl");
 
             public static NullnessAnnotation resolveParameterAnnotation(JMethod method, int index) {
-                // TODO: make this resolve process as a independent analysis?
                 if (index == 0) {
                     String subSignature = method.getSubsignature().toString();
                     if (subSignature.equals(EQUALS) && !method.isStatic()) {
@@ -388,7 +383,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                     return false;
                 }
                 JMethod invokeMethod = stmt.getInvokeExp().getMethodRef().resolveNullable();
-                // TODO: develop and use Unconditional dereference analysis
                 if (invokeMethod == null) {
                     return visitDefault(stmt);
                 }
@@ -406,7 +400,6 @@ public class IsNullAnalysis extends AnalysisDriver<Stmt, IsNullFact> {
                         NullnessAnnotation nullnessAnnotation =
                                 NullnessAnnotation.resolveParameterAnnotation(invokeMethod, paramIndex);
                         if (nullnessAnnotation == NullnessAnnotation.NONNULL) {
-                            // TODO: if arg is definitely null, should take special care for this case?
                             out.update(stmt.getInvokeExp().getArg(paramIndex), IsNullValue.NONNULL);
                         }
                     }

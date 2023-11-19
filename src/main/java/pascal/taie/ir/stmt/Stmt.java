@@ -38,6 +38,10 @@ public interface Stmt extends Indexable, Serializable {
     /**
      * @return the index of this Stmt in the container IR.
      */
+
+
+    public int get_stmt_id();
+    public void set_stmt_id(int x);
     @Override
     int getIndex();
 

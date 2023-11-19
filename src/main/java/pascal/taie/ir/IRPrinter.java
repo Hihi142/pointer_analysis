@@ -61,13 +61,14 @@ public class IRPrinter {
         if (stmt instanceof Invoke) {
             return toString((Invoke) stmt);
         } else {
-            return String.format("%s %s;", position(stmt), stmt);
+            return String.format("[%d] %s;", stmt.get_stmt_id(), stmt);
         }
     }
 
     public static String toString(Invoke invoke) {
         Formatter formatter = new Formatter();
-        formatter.format("%s ", position(invoke));
+        // formatter.format("%s ", position(invoke));
+        formatter.format("[%d] ", invoke.get_stmt_id());
         if (invoke.getResult() != null) {
             // some variable names contain '%', which will be treated as
             // format specifier by formatter, thus we need to escape it

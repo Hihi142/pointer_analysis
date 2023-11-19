@@ -17,7 +17,7 @@ public class Preprocess extends MethodAnalysis<PreprocessResult> {
     @Override
     public PreprocessResult analyze(IR ir) {
         var result = new PreprocessResult();
-        result.analysis(ir);
+        result.count_stmts_method(ir);
         return result;
     }
     
