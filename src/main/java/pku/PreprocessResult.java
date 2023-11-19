@@ -13,9 +13,10 @@ import pascal.taie.ir.stmt.New;
 import java.util.Map;
 
 public class PreprocessResult {
-
+    
     public final Map<New, Integer> obj_ids;
     public final Map<Integer, Var> test_pts;
+    static int call_num = 0;
 
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
@@ -70,6 +71,7 @@ public class PreprocessResult {
 
             if(stmt instanceof Invoke)
             {
+                ((Invoke)stmt).call_id = ++call_num;
                 var exp = ((Invoke) stmt).getInvokeExp();
                 if(exp instanceof InvokeStatic)
                 {

@@ -15,7 +15,7 @@ import pascal.taie.config.AnalysisConfig;
 
 public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResult> {
     public static final String ID = "pku-pta-trivial";
-
+    static int call_num = 0;
     private static final Logger logger = LogManager.getLogger(IRDumper.class);
 
     /**

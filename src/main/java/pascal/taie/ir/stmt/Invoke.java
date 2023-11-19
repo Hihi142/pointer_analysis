@@ -52,6 +52,8 @@ public class Invoke extends DefinitionStmt<Var, InvokeExp>
      * The variable receiving the result of the invocation. This field
      * is null if no variable receives the invocation result, e.g., o.m(...).
      */
+    public int call_id;
+
     @Nullable
     private final Var result;
 
