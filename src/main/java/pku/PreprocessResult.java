@@ -16,82 +16,51 @@ import java.util.ArrayList;
 
 public class PreprocessResult {
     
-    public final Map<New, Integer> obj_ids;
-    public final Map<Integer, Var> test_pts;
-    static int call_num = 0;
-    static int stmt_num = 0;
-
-    public Stmt stmt_list[];
-    public ArrayList<Integer>suf[];
-    public class WStmt {
-        Stmt s;
-        ArrayList<Integer> suf;
-        WStmt() {
-            s = null;
-            suf = new ArrayList<Integer>();   
-        }
-    };
-    public class WVar {
-        Var v;
-    };
-    public class WObject {
-        HashMap<String, WVar>field;
-    };
-
+    public final Map<New, Integer>obj_ids;
+    public final Map<Integer, Var>test_pts;
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
         test_pts = new HashMap<Integer,Var>();
     }
+    public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
+    public void test(int id, Var v) { test_pts.put(id, v); }
 
-    /**
-     * Benchmark.alloc(id);
-     * X x = new X;// stmt
-     * @param stmt statement that allocates a new object
-     * @param id id of the object allocated
-     */
-    public void alloc(New stmt, int id)
-    {
-        obj_ids.put(stmt, id);
-    }
-    /**
-     * Benchmark.test(id, var)
-     * @param id id of the testing
-     * @param v the pointer/variable
-     */
-    public void test(int id, Var v)
-    {
-        test_pts.put(id, v);
-    }
-    /**
-     *
-     * @param stmt statement that allocates a new object
-     * @return id of the object allocated
-     */
-    public int getObjIdAt(New stmt)
-    {
-        return obj_ids.get(stmt);
-    }
-    /**
-     * @param id
-     * @return the pointer/variable in Benchmark.test(id, var);
-     */
-    public Var getTestPt(int id)
-    {
-        return test_pts.get(id);
-    }
+    static int call_num = 0;
+    static int stmt_num = 0;
+    static int object_num = 0;
+    static int var_num = 0;
 
-    /**
-     * analysis of a JMethod, the result storing in this
-     * @param ir ir of a JMethod
-     */
-    public void analysis(IR ir) {
+    private void count_pass_ir(IR ir) {
+        var stmts = ir.getStmts();
+        for (Stmt stmt : stmts) {
+            stmt.set_stmt_id(stmt_num++);
+            if(stmt instanceof Invoke)
+            {
+                var invoke = (Invoke)stmt;
+                invoke.call_id = ++call_num;
+            }
+            if(stmt instanceof New)
+            {
+                var nw = (New)stmt;
+                nw.object_id = ++object_num;
+            }
+        }
+    }
+    private void count_pass() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            jclass.getDeclaredMethods().forEach(method->{
+                if(!method.isAbstract())
+                    count_pass_ir(method.getIR());
+            });
+        });
+    }
+    private void gather_pass_ir(IR ir) {
         var stmts = ir.getStmts();
         Integer id = 0;
         for (var stmt : stmts) {
             stmt.set_stmt_id(stmt_num++);
             if(stmt instanceof Invoke)
             {
-                ((Invoke)stmt).call_id = ++call_num;
                 var exp = ((Invoke) stmt).getInvokeExp();
                 if(exp instanceof InvokeStatic)
                 {
@@ -121,40 +90,24 @@ public class PreprocessResult {
             }
             else if(stmt instanceof New)
             {
-                if(id!=0) // ignore unlabeled `new` stmts
-                    this.alloc((New)stmt, id);
+                if(id != 0) this.alloc((New)stmt, id);
             }
         }
     }
-
-    @SuppressWarnings("unchecked")
-    private void label_stmts() {
+    private void gather_pass() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             jclass.getDeclaredMethods().forEach(method->{
                 if(!method.isAbstract())
-                {
-                    
-                }
-            });
-        });
-        stmt_list = new Stmt[stmt_num];
-        
-        suf = new ArrayList[stmt_num];
-
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            jclass.getDeclaredMethods().forEach(method->{
-                if(!method.isAbstract()){
-                    var ir = method.getIR();
-                    var stmts = ir.getStmts();
-                    for(var stmt: stmts) {
-                        int idx = stmt.get_stmt_id();
-                        stmt_list[idx] = stmt;
-                    }
-                }
+                    gather_pass_ir(method.getIR());
             });
         });
     }
+    WStmt[] wstmts;
+    WObject[] wobjects;
     public void init() {
-        label_stmts();
+        count_pass();
+        wstmts = new WStmt[stmt_num];
+        wobjects = new WObject[object_num];
+        gather_pass();
     }
 }

@@ -11,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import pascal.taie.World;
 import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.analysis.misc.IRDumper;
+import pascal.taie.analysis.pta.core.cs.element.Pointer;
 import pascal.taie.config.AnalysisConfig;
 import pascal.taie.ir.IR;
 import pascal.taie.ir.IRPrinter;
@@ -39,46 +40,10 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
         }
     }
 
-    public void dump_method(IR ir) {
-        var stmts = ir.getStmts();
-        for (var stmt : stmts) {
-            logger.info("        " + IRPrinter.toString(stmt));
-            if(stmt instanceof Invoke)
-                logger.info("        // Calling ID: " + Integer.toString(((Invoke)stmt).call_id));
-        }
-    }
-    public void dump_whole() {
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            logger.info("Dumping class {}", jclass.getName());
-            jclass.getDeclaredMethods().forEach(method->{
-                logger.info("    Dumping method {}", method.getName());
-                if(!method.isAbstract())
-                    dump_method(method.getIR());
-            });
-        });
-    }
-    @Override
-    public PointerAnalysisResult analyze() {
-var preprocess = new PreprocessResult(); 
-        // 遍历程序，收集全部的测试点数据
-
+    public PointerAnalysisResult trivial_typing(PreprocessResult preprocess) {
         var result = new PointerAnalysisResult();
-
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            logger.info("Analyzing class {}", jclass.getName());
-            jclass.getDeclaredMethods().forEach(method->{
-                if(!method.isAbstract())
-                    preprocess.analysis(method.getIR());
-            });
-        });
-
-        var CH = World.get().getClassHierarchy();
         var TS = World.get().getTypeSystem();
-        // all.forEach(jc -> logger.info("getting class name: {}", jc.getName()));
-
-
         var objs = new TreeSet<>(preprocess.obj_ids.values());
-
         if (objs.size() == 3 && preprocess.test_pts.size() == 3)
         {
             TreeSet<Integer> ts1 = new TreeSet<>();
@@ -122,7 +87,10 @@ var preprocess = new PreprocessResult();
         dump(result);
 
         return result;
-    }
+    } 
+
+    @Override // We should Never call it!
+    public PointerAnalysisResult analyze() { return null; }
 
     protected void dump(PointerAnalysisResult result) {
         try (PrintStream out = new PrintStream(new FileOutputStream(dumpPath))) {

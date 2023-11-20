@@ -39,6 +39,7 @@ public class New extends AssignStmt<Var, NewExp> {
     /**
      * The method containing this new statement.
      */
+    public int object_id = -1;
     private final JMethod container;
 
     public New(JMethod method, Var lvalue, NewExp rvalue) {

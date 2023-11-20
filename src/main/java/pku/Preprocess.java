@@ -16,8 +16,9 @@ public class Preprocess extends MethodAnalysis<PreprocessResult> {
 
     @Override
     public PreprocessResult analyze(IR ir) {
+        // Never call it.
         var result = new PreprocessResult();
-        result.analysis(ir);
+        // result.gather_all(ir);
         return result;
     }
     

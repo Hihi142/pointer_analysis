@@ -48,6 +48,7 @@ import java.util.List;
  */
 public class Var implements LValue, RValue, Indexable {
 
+    public int var_id = -1;
     /**
      * The method containing this Var.
      */
