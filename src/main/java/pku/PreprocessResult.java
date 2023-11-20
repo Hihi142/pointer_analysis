@@ -11,16 +11,25 @@ import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 import pascal.taie.ir.stmt.Stmt;
+import pascal.taie.language.type.Type;
+import pascal.taie.language.type.ArrayType;
+import pascal.taie.language.type.ClassType;
+
 import java.util.Map;
+
 import java.util.ArrayList;
 
 public class PreprocessResult {
     
     public final Map<New, Integer>obj_ids;
     public final Map<Integer, Var>test_pts;
+    public ArrayList<WStmt> wstmts;
+    public ArrayList<WObject> wobjects;
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
         test_pts = new HashMap<Integer,Var>();
+        wstmts = new ArrayList<WStmt>();
+        wobjects = new ArrayList<WObject>();
     }
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
     public void test(int id, Var v) { test_pts.put(id, v); }
@@ -30,6 +39,20 @@ public class PreprocessResult {
     static int object_num = 0;
     static int var_num = 0;
 
+    static boolean ispointer(Type t) {
+        return t instanceof ArrayType || t instanceof ClassType;
+    }
+    WObject new_object(Type t) {
+        WObject wo = new WObject();
+        if(t instanceof ClassType) {
+            var jfs = ((ClassType)t).getJClass().getDeclaredFields();
+            for(var jf: jfs) {
+                if(ispointer(jf.getType())) 
+                    wo.field.put(jf.getName(), var_num++);
+            }
+        }
+        return wo;
+    }
     private void count_pass_ir(IR ir) {
         var stmts = ir.getStmts();
         for (Stmt stmt : stmts) {
@@ -42,7 +65,18 @@ public class PreprocessResult {
             if(stmt instanceof New)
             {
                 var nw = (New)stmt;
-                nw.object_id = ++object_num;
+                wobjects.add(new_object(nw.getRValue().getType()));
+                nw.object_id = object_num++;
+            }
+            var wlval = stmt.getDef();
+            if(wlval.isPresent())
+            {
+                var lval = wlval.get();
+                if(lval instanceof Var){
+                    Var v = (Var)lval;
+                    if(v.var_id == -1 && ispointer(v.getType()))
+                        v.var_id = var_num++;
+                }
             }
         }
     }
@@ -58,7 +92,6 @@ public class PreprocessResult {
         var stmts = ir.getStmts();
         Integer id = 0;
         for (var stmt : stmts) {
-            stmt.set_stmt_id(stmt_num++);
             if(stmt instanceof Invoke)
             {
                 var exp = ((Invoke) stmt).getInvokeExp();
@@ -85,7 +118,6 @@ public class PreprocessResult {
                             this.test(test_id, pt);
                         }
                     }
-
                 }
             }
             else if(stmt instanceof New)
@@ -102,12 +134,9 @@ public class PreprocessResult {
             });
         });
     }
-    WStmt[] wstmts;
-    WObject[] wobjects;
     public void init() {
         count_pass();
-        wstmts = new WStmt[stmt_num];
-        wobjects = new WObject[object_num];
         gather_pass();
+        MyDumper.dump(this);
     }
 }

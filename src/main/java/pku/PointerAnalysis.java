@@ -28,7 +28,6 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         // it's your analysis assignment to accomplish
 
         PointerAnalysisResult trivial_typing = super.trivial_typing(preprocess);
-        MyDumper.dump();
         return trivial_typing;
         // return result;
     }
