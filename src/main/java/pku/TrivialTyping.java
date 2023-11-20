@@ -19,6 +19,7 @@ import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
+import pascal.taie.language.type.Type;
 
 public class TrivialTyping {
     public Map<New, Integer> objs;
@@ -116,17 +117,14 @@ public class TrivialTyping {
             for(Map.Entry<Integer, Var> entry : tests.entrySet()) 
             {
                 Integer test_id = entry.getKey();
-                var test_type = entry.getValue().getType();
-                // var test_class = CH.getClass(test_class_name);
+                Type test_type = entry.getValue().getType();
                 TreeSet<Integer> ts = new TreeSet<>();
                 for(Map.Entry<New, Integer> obj :  objs.entrySet()) {
                     Integer obj_id = obj.getValue();
-                    var obj_type = obj.getKey().getRValue().getType();
+                    Type obj_type = obj.getKey().getRValue().getType();
                     if(TS.isSubtype(obj_type, test_type) || TS.isSubtype(test_type, obj_type))
                         ts.add(obj_id);
-                    // 处理 key 和 value
                 }
-                // 处理 key 和 value
                 result.put(test_id, ts);
             }
         }
