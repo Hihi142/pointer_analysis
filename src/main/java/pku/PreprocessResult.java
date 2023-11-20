@@ -23,6 +23,20 @@ public class PreprocessResult {
 
     public Stmt stmt_list[];
     public ArrayList<Integer>suf[];
+    public class WStmt {
+        Stmt s;
+        ArrayList<Integer> suf;
+        WStmt() {
+            s = null;
+            suf = new ArrayList<Integer>();   
+        }
+    };
+    public class WVar {
+        Var v;
+    };
+    public class WObject {
+        HashMap<String, WVar>field;
+    };
 
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
