@@ -21,10 +21,14 @@ import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 
 public class TrivialTyping {
-    static Map<New, Integer> objs;
-    static Map<Integer, Var> tests;
-    static void alloc(New stmt, int id)
-    {
+    public Map<New, Integer> objs;
+    public Map<Integer, Var> tests;
+
+    TrivialTyping() {
+        objs = new HashMap<New, Integer>();
+        tests = new HashMap<Integer, Var>();
+    }
+    public void alloc(New stmt, int id) {
         objs.put(stmt, id);
     }
     /**
@@ -32,11 +36,10 @@ public class TrivialTyping {
      * @param id id of the testing
      * @param v the pointer/variable
      */
-    static void test(int id, Var v)
-    {
+    public void test(int id, Var v) {
         tests.put(id, v);
     }
-    static void count_ir(IR ir) {
+    public void count_ir(IR ir) {
         var stmts = ir.getStmts();
         Integer id = 0;
         for (var stmt : stmts) {
@@ -76,7 +79,7 @@ public class TrivialTyping {
             }
         }
     }
-    static PointerAnalysisResult get() {
+    public PointerAnalysisResult get() {
 
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             jclass.getDeclaredMethods().forEach(method->{
@@ -109,10 +112,23 @@ public class TrivialTyping {
         }
         else
         {
-            var all = new TreeSet<>(objs.values());
-            tests.forEach((test_id, pt)->{
-                result.put(test_id, all);
-            });
+            var TS = World.get().getTypeSystem();
+            for(Map.Entry<Integer, Var> entry : tests.entrySet()) 
+            {
+                Integer test_id = entry.getKey();
+                var test_type = entry.getValue().getType();
+                // var test_class = CH.getClass(test_class_name);
+                TreeSet<Integer> ts = new TreeSet<>();
+                for(Map.Entry<New, Integer> obj :  objs.entrySet()) {
+                    Integer obj_id = obj.getValue();
+                    var obj_type = obj.getKey().getRValue().getType();
+                    if(TS.isSubtype(obj_type, test_type) || TS.isSubtype(test_type, obj_type))
+                        ts.add(obj_id);
+                    // 处理 key 和 value
+                }
+                // 处理 key 和 value
+                result.put(test_id, ts);
+            }
         }
         return result;
     }

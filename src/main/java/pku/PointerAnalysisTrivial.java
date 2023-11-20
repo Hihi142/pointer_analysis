@@ -56,49 +56,10 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
     }
     @Override
     public PointerAnalysisResult analyze() {
-        var preprocess = new PreprocessResult(); 
-        // 遍历程序，收集全部的测试点数据
-
-        var result = new PointerAnalysisResult();
-        preprocess.init();
-        
-
-        
-        dump_whole();
-        
-        var objs = new TreeSet<>(preprocess.obj_ids.values());
-
-        
-        if (objs.size() == 3 && preprocess.test_pts.size() == 3)
-        {
-            TreeSet<Integer> ts1 = new TreeSet<>();
-            ts1.add(1);
-            ts1.add(2);
-            result.put(1, new TreeSet<>(ts1));
-
-            TreeSet<Integer> ts2 = new TreeSet<>();
-            ts2.add(2);
-            result.put(2, new TreeSet<>(ts2));
-
-            TreeSet<Integer> ts3 = new TreeSet<>();
-            ts3.add(3);
-            result.put(3, new TreeSet<>(ts3));
-        }
-        else if(objs.size() == 4 && preprocess.test_pts.size() < 2)
-        {
-            TreeSet<Integer> ts4 = new TreeSet<>();
-            ts4.add(1);
-            result.put(1, new TreeSet<>(ts4));
-        }
-        else
-        {
-            preprocess.test_pts.forEach((test_id, pt)->{
-                result.put(test_id, objs);
-            });
-        }
-        dump(result);
-
-        return result;
+        var tri = new TrivialTyping();
+        var ret = tri.get();
+        dump(ret);
+        return ret;
     }
 
     protected void dump(PointerAnalysisResult result) {
