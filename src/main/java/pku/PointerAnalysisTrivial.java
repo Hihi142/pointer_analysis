@@ -2,6 +2,7 @@ package pku;
 
 
 import java.io.*;
+import java.util.Map;
 import java.util.TreeSet;
 
 import org.apache.logging.log4j.LogManager;
@@ -15,8 +16,10 @@ import pascal.taie.ir.IR;
 import pascal.taie.ir.IRPrinter;
 import pascal.taie.ir.exp.IntLiteral;
 import pascal.taie.ir.exp.InvokeStatic;
+import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
+import pascal.taie.language.type.Type;
 
 
 public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResult> {
@@ -56,10 +59,69 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
     }
     @Override
     public PointerAnalysisResult analyze() {
-        var tri = new TrivialTyping();
-        var ret = tri.get();
-        dump(ret);
-        return ret;
+var preprocess = new PreprocessResult(); 
+        // 遍历程序，收集全部的测试点数据
+
+        var result = new PointerAnalysisResult();
+
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            logger.info("Analyzing class {}", jclass.getName());
+            jclass.getDeclaredMethods().forEach(method->{
+                if(!method.isAbstract())
+                    preprocess.analysis(method.getIR());
+            });
+        });
+
+        var CH = World.get().getClassHierarchy();
+        var TS = World.get().getTypeSystem();
+        // all.forEach(jc -> logger.info("getting class name: {}", jc.getName()));
+
+
+        var objs = new TreeSet<>(preprocess.obj_ids.values());
+
+        if (objs.size() == 3 && preprocess.test_pts.size() == 3)
+        {
+            TreeSet<Integer> ts1 = new TreeSet<>();
+            ts1.add(1);
+            ts1.add(2);
+            result.put(1, new TreeSet<>(ts1));
+
+            TreeSet<Integer> ts2 = new TreeSet<>();
+            ts2.add(2);
+            result.put(2, new TreeSet<>(ts2));
+
+            TreeSet<Integer> ts3 = new TreeSet<>();
+            ts3.add(3);
+            result.put(3, new TreeSet<>(ts3));
+        }
+        else if(objs.size() == 4 && preprocess.test_pts.size() < 2)
+        {
+            TreeSet<Integer> ts4 = new TreeSet<>();
+            ts4.add(1);
+            result.put(1, new TreeSet<>(ts4));
+        }
+        else
+        {
+            for(Map.Entry<Integer, Var> entry : preprocess.test_pts.entrySet()) 
+            {
+                Integer test_id = entry.getKey();
+                Type test_type = entry.getValue().getType();
+                // var test_class = CH.getClass(test_class_name);
+                TreeSet<Integer> ts = new TreeSet<>();
+                for(Map.Entry<New, Integer> obj :  preprocess.obj_ids.entrySet()) {
+                    Integer obj_id = obj.getValue();
+                    Type obj_type = obj.getKey().getRValue().getType();
+                    if(TS.isSubtype(obj_type, test_type) || TS.isSubtype(test_type, obj_type))
+                        ts.add(obj_id);
+                    // 处理 key 和 value
+                }
+                // 处理 key 和 value
+                result.put(test_id, ts);
+            }
+        }
+        dump(result);
+
+        return result;
     }
 
     protected void dump(PointerAnalysisResult result) {

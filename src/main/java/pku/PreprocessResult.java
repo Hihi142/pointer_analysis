@@ -84,7 +84,7 @@ public class PreprocessResult {
      * analysis of a JMethod, the result storing in this
      * @param ir ir of a JMethod
      */
-    public void count_stmts_method(IR ir) {
+    public void analysis(IR ir) {
         var stmts = ir.getStmts();
         Integer id = 0;
         for (var stmt : stmts) {
@@ -132,7 +132,9 @@ public class PreprocessResult {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             jclass.getDeclaredMethods().forEach(method->{
                 if(!method.isAbstract())
-                    count_stmts_method(method.getIR());
+                {
+                    
+                }
             });
         });
         stmt_list = new Stmt[stmt_num];
