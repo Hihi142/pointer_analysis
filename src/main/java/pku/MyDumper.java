@@ -44,5 +44,13 @@ public class MyDumper {
             logger.info("Field-Pointers in Object " + Integer.toString(i));
             logger.info("  " + ppr.wobjects.get(i).field.toString());
         }
+        logger.info("------ Below are the STATIC-FIELD pointers ------");
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{    
+            logger.info("Duming static pointers of class {}", jclass.getName());
+            jclass.getDeclaredFields().forEach(field->{
+                if(field.var_id != -1)
+                    logger.info("  {}: {}",field.getName(), field.var_id);
+            });
+        });
     }
 }

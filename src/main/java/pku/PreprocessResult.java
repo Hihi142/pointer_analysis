@@ -12,6 +12,7 @@ import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 import pascal.taie.ir.stmt.Stmt;
 import pascal.taie.language.type.Type;
+import pascal.taie.language.classes.JClass;
 import pascal.taie.language.type.ArrayType;
 import pascal.taie.language.type.ClassType;
 
@@ -40,15 +41,28 @@ public class PreprocessResult {
     static int var_num = 0;
 
     static boolean ispointer(Type t) {
-        return t instanceof ArrayType || t instanceof ClassType;
+        assert(!(t instanceof ArrayType) );
+        return t instanceof ClassType;
+    }
+    Type dearray(Type t) {
+        while(t instanceof ArrayType)
+            t = ((ArrayType)t).baseType();
+        return t;
     }
     WObject new_object(Type t) {
         WObject wo = new WObject();
+        t = dearray(t);
         if(t instanceof ClassType) {
-            var jfs = ((ClassType)t).getJClass().getDeclaredFields();
-            for(var jf: jfs) {
-                if(ispointer(jf.getType())) 
-                    wo.field.put(jf.getName(), var_num++);
+            JClass jc = ((ClassType)t).getJClass();
+            while(jc != null) {
+                if(!jc.isApplication()) break;
+                var jfs = jc.getDeclaredFields();
+                for(var jf: jfs) {
+                    if(jf.isStatic()) continue;
+                    if(ispointer(jf.getType())) 
+                        wo.field.put(jf.getName(), var_num++);
+                }
+                jc = jc.getOuterClass();
             }
         }
         return wo;
@@ -74,7 +88,7 @@ public class PreprocessResult {
                 var lval = wlval.get();
                 if(lval instanceof Var){
                     Var v = (Var)lval;
-                    if(v.var_id == -1 && ispointer(v.getType()))
+                    if(v.var_id == -1 && ispointer(dearray(v.getType())))
                         v.var_id = var_num++;
                 }
             }
@@ -128,15 +142,27 @@ public class PreprocessResult {
     }
     private void gather_pass() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            
             jclass.getDeclaredMethods().forEach(method->{
                 if(!method.isAbstract())
                     gather_pass_ir(method.getIR());
             });
         });
     }
+    private void gather_static_pointers() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{    
+            jclass.getDeclaredFields().forEach(field->{
+                if(field.isStatic())
+                {
+                    field.var_id = var_num++;
+                }
+            });
+        });
+    }
     public void init() {
         count_pass();
         gather_pass();
+        gather_static_pointers();
         MyDumper.dump(this);
     }
 }

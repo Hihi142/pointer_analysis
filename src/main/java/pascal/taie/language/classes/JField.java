@@ -38,7 +38,7 @@ import java.util.Set;
 public class JField extends ClassMember {
 
     private final Type type;
-
+    public int var_id = -1;
     @Nullable
     @Experimental
     private final ReferenceTypeGSignature gSignature;
