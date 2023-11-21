@@ -13,8 +13,9 @@ public class PointerAnalysis extends PointerAnalysisTrivial
 
     @Override
     public PointerAnalysisResult analyze() {
-        var preprocess = new PreprocessResult();
-        preprocess.init();
+        var ppr = new PreprocessResult();
+        ppr.gather_test_info();;
+        PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
         
         // var world = World.get();
         // var main = world.getMainMethod();
@@ -27,7 +28,8 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         // As for when and how you enter one method,
         // it's your analysis assignment to accomplish
 
-        PointerAnalysisResult trivial_typing = super.trivial_typing(preprocess);
+        
+        MyAnalyzer.init(ppr);
         return trivial_typing;
         // return result;
     }
