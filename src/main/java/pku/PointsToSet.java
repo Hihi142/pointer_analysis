@@ -21,7 +21,7 @@ public class PointsToSet {
             res++;
         }
         return res;
-    } 
+    }
     void add(int id_of_element) {
         int index = id_of_element >> 6;
         long bin = 1l << (id_of_element & 63);

@@ -78,8 +78,9 @@ public class PreprocessResult {
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
         test_pts = new HashMap<Integer,Var>();
-        wstmts = new ArrayList<WStmt>();
-        wobjects = new ArrayList<WObject>();
+        wstmts = new ArrayList<>();
+        wobjects = new ArrayList<>();
+        wvars = new ArrayList<>();
     }
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
     public void test(int id, Var v) { test_pts.put(id, v); }

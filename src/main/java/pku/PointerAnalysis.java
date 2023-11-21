@@ -28,7 +28,7 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         // As for when and how you enter one method,
         // it's your analysis assignment to accomplish
 
-        
+        ppr.init();        
         MyAnalyzer.init(ppr);
         return trivial_typing;
         // return result;
