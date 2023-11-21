@@ -78,9 +78,9 @@ public class PreprocessResult {
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
         test_pts = new HashMap<Integer,Var>();
-        wstmts = new ArrayList<>();
-        wobjects = new ArrayList<>();
-        wvars = new ArrayList<>();
+        wstmts = new ArrayList<WStmt>();
+        wobjects = new ArrayList<WObject>();
+        wvars = new ArrayList<WVar>();
     }
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
     public void test(int id, Var v) { test_pts.put(id, v); }
@@ -99,24 +99,6 @@ public class PreprocessResult {
             t = ((ArrayType)t).baseType();
         return t;
     }
-    WObject new_object(Type t) {
-        WObject wo = new WObject();
-        t = dearray(t);
-        if(t instanceof ClassType) {
-            JClass jc = ((ClassType)t).getJClass();
-            while(jc != null) {
-                if(!jc.isApplication()) break;
-                var jfs = jc.getDeclaredFields();
-                for(var jf: jfs) {
-                    if(jf.isStatic()) continue;
-                    if(ispointer(jf.getType())) 
-                        wo.field.put(jf.getName(), var_num++);
-                }
-                jc = jc.getSuperClass();
-            }
-        }
-        return wo;
-    }
     private void count_pass_ir(IR ir) {
         var stmts = ir.getStmts();
         for (Stmt stmt : stmts) {
@@ -129,8 +111,10 @@ public class PreprocessResult {
             if(stmt instanceof New)
             {
                 var nw = (New)stmt;
-                wobjects.add(new_object(nw.getRValue().getType()));
-                nw.object_id = object_num++;
+                if(obj_ids.containsKey(nw))
+                    wobjects.add(new WObject(nw, obj_ids.get(nw)));
+                else  
+                    wobjects.add(new WObject(nw, 0));
             }
             var wlval = stmt.getDef();
             if(wlval.isPresent())

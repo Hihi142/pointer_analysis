@@ -1,7 +1,7 @@
 package pku;
 
-import pascal.taie.World;
-import pascal.taie.analysis.ProgramAnalysis;
+// import pascal.taie.World;
+// import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.config.AnalysisConfig;
 public class PointerAnalysis extends PointerAnalysisTrivial
 {
@@ -33,5 +33,4 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         return trivial_typing;
         // return result;
     }
-
 }

@@ -29,6 +29,10 @@ public class MyAnalyzer {
         obj_ids = ppr.obj_ids;
         test_pts = ppr.test_pts;
     }
+    static PointerAnalysisResult get_result() {
+        
+        return null;
+    }
     static void update_pass() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             jclass.getDeclaredMethods().forEach(method->{

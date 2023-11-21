@@ -41,6 +41,7 @@ public class MyDumper {
         });
         logger.info("------ Below are the OBJECT-FIELD pointers ------");
         for(int i = 0; i < ppr.wobjects.size(); ++i) {
+            if(ppr.wobjects.get(i).field.size() == 0) continue;
             logger.info("Field-Pointers in Object " + Integer.toString(i));
             logger.info("  " + ppr.wobjects.get(i).field.toString());
         }
