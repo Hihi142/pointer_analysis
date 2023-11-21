@@ -74,7 +74,7 @@ public class PreprocessResult {
 
     public ArrayList<WStmt> wstmts;
     public ArrayList<WObject> wobjects;
-    public ArrayList<WVar> wvars;
+    static ArrayList<WVar> wvars;
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
         test_pts = new HashMap<Integer,Var>();
@@ -110,26 +110,21 @@ public class PreprocessResult {
             }
             if(stmt instanceof New)
             {
-                var nw = (New)stmt;
+                var nw = (New)stmt; 
                 if(obj_ids.containsKey(nw))
                     wobjects.add(new WObject(nw, obj_ids.get(nw)));
-                else  
+                else
                     wobjects.add(new WObject(nw, 0));
             }
-            var wlval = stmt.getDef();
-            if(wlval.isPresent())
+        }
+        var varlist = ir.getVars();
+        for(var v: varlist) {
+            if(ispointer(dearray(v.getType())))
             {
-                var lval = wlval.get();
-                if(lval instanceof Var){
-                    Var v = (Var)lval;
-                    if(v.var_id == -1 && ispointer(dearray(v.getType())))
-                    {
-                        int id = var_num++;
-                        v.var_id = id;
-                        WVar wv = new WVar(v, id);
-                        wvars.add(wv);
-                    }
-                }
+                int id = var_num++;
+                v.var_id = id;
+                WVar wv = new WVar(v, id);
+                wvars.add(wv);
             }
         }
     }
@@ -154,7 +149,7 @@ public class PreprocessResult {
     public void init() {
         count_pass();
         gather_static_pointers();
-        MyDumper.dump(this);
+        // MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }

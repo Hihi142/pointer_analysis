@@ -3,6 +3,7 @@ package pku;
 // import pascal.taie.World;
 // import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.config.AnalysisConfig;
+import pascal.taie.analysis.graph.callgraph.*;
 public class PointerAnalysis extends PointerAnalysisTrivial
 {
     public static final String ID = "pku-pta";
@@ -15,7 +16,7 @@ public class PointerAnalysis extends PointerAnalysisTrivial
     public PointerAnalysisResult analyze() {
         var ppr = new PreprocessResult();
         ppr.gather_test_info();;
-        PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
+        // PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
         
         // var world = World.get();
         // var main = world.getMainMethod();
@@ -30,7 +31,10 @@ public class PointerAnalysis extends PointerAnalysisTrivial
 
         ppr.init();        
         MyAnalyzer.init(ppr);
-        return trivial_typing;
+        var res = MyAnalyzer.analyze();
+        dump(res);
+        return res;
+        // return trivial_typing;
         // return result;
     }
 }

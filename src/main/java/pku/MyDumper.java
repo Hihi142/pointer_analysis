@@ -36,22 +36,27 @@ public class MyDumper {
             jclass.getDeclaredMethods().forEach(method->{
                 logger.info("  Dumping method {}:", method.getName());
                 if(!method.isAbstract())
+                {
+                    var ir = method.getIR();
+                    logger.info("  Param List: {}", ir.getParams());
+                    logger.info("  this-pointer: {}", ir.getThis());
                     dump_method(method.getIR());
+                }
             });
         });
         logger.info("------ Below are the OBJECT-FIELD pointers ------");
         for(int i = 0; i < ppr.wobjects.size(); ++i) {
-            if(ppr.wobjects.get(i).field.size() == 0) continue;
-            logger.info("Field-Pointers in Object " + Integer.toString(i));
+            logger.info("Dumping Object {}", i);
+            logger.info("  TestPoitn ID: {}", ppr.wobjects.get(i).tester_id);
             logger.info("  " + ppr.wobjects.get(i).field.toString());
         }
-        logger.info("------ Below are the STATIC-FIELD pointers ------");
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{    
-            logger.info("Duming static pointers of class {}", jclass.getName());
-            jclass.getDeclaredFields().forEach(field->{
-                if(field.var_id != -1)
-                    logger.info("  {}: {}",field.getName(), field.var_id);
-            });
-        });
+        // logger.info("------ Below are the STATIC-FIELD pointers ------");
+        // World.get().getClassHierarchy().applicationClasses().forEach(jclass->{    
+        //     logger.info("Duming static pointers of class {}", jclass.getName());
+        //     jclass.getDeclaredFields().forEach(field->{
+        //         if(field.var_id != -1)
+        //             logger.info("  {}: {}",field.getName(), field.var_id);
+        //     });
+        // });
     }
 }

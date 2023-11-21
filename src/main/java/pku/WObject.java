@@ -18,6 +18,7 @@ public class WObject {
     }
     WObject(New nw0, int tester_id0) {
         nw = nw0;
+        nw.object_id = PreprocessResult.object_num++;
         tester_id = tester_id0;
         field = new HashMap<>();
         
@@ -33,7 +34,11 @@ public class WObject {
             for(var jf: jfs) {
                 if(jf.isStatic()) continue;
                 if(ispointer(jf.getType())) 
-                    field.put(jf.getName(), PreprocessResult.var_num++);
+                {
+                    int id = PreprocessResult.var_num++;
+                    field.put(jf.getName(), id);
+                    PreprocessResult.wvars.add(new WVar(null, id));
+                }
             }
             jc = jc.getSuperClass();
         }
