@@ -23,7 +23,7 @@ public class PointsToSet {
         return res;
     }
     void add(int id_of_element) {
-        int index = id_of_element >> 6;
+        int index = id_of_element / 64;
         long bin = 1l << (id_of_element & 63);
         if( (x[index] & bin) == 0) {
             lst.add(id_of_element);

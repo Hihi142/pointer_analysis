@@ -79,7 +79,6 @@ public class PointerAnalysisTrivial extends ProgramAnalysis<PointerAnalysisResul
             }
         // }
         dump(result);
-
         return result;
     } 
 

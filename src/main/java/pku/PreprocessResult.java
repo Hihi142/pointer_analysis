@@ -111,6 +111,7 @@ public class PreprocessResult {
             if(stmt instanceof New)
             {
                 var nw = (New)stmt; 
+                if(! ispointer(nw.getRValue().getType()) ) continue;
                 if(obj_ids.containsKey(nw))
                     wobjects.add(new WObject(nw, obj_ids.get(nw)));
                 else
@@ -139,7 +140,7 @@ public class PreprocessResult {
     private void gather_static_pointers() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{    
             jclass.getDeclaredFields().forEach(field->{
-                if(field.isStatic())
+                if(field.isStatic() && ispointer(field.getType()))
                 {
                     int id = var_num++;
                     field.var_id = id; 
@@ -151,7 +152,7 @@ public class PreprocessResult {
     public void init() {
         count_pass();
         gather_static_pointers();
-        // MyDumper.dump(this);
+        MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }

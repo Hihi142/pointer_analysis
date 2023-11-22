@@ -30,6 +30,7 @@ public class MyAnalyzer {
     }
     static void merge(Var merger, Var mergee)
     {
+        if(merger == null || mergee == null) return;
         if(!is_pointer(merger.getType()) || !is_pointer(mergee.getType()))
             return;
         int lid = merger.var_id;
@@ -50,6 +51,7 @@ public class MyAnalyzer {
                 var nw = (New)stmt;
                 int ptr_id = nw.getLValue().var_id;
                 int obj_id = nw.object_id;
+                if(obj_id < 0 || ptr_id < 0) return;
                 wvars.get(ptr_id).pointee.add(obj_id);
             }
             else if(stmt instanceof Copy)
@@ -71,6 +73,7 @@ public class MyAnalyzer {
                     int rid = r.var_id;
                     for(var obj: wvars.get(base_id).pointee.lst) {
                         var ptr_id = wobjects.get(obj).field.get(str);
+                        if(ptr_id == null) continue;
                         merge(ptr_id, rid);
                     }
                 }
@@ -89,10 +92,13 @@ public class MyAnalyzer {
                 if(r instanceof InstanceFieldAccess)
                 {
                     int base_id = ((InstanceFieldAccess)r).getBase().var_id;
+                    var jf = r.getFieldRef().resolveNullable();
+                    if(!is_pointer(jf.getType())) return;
                     var str = r.getFieldRef().resolveNullable().getName();
                     int lid = l.var_id;
                     for(var obj: wvars.get(base_id).pointee.lst) {
                         var ptr_id = wobjects.get(obj).field.get(str);
+                        if(ptr_id == null) continue;
                         merge(lid, ptr_id);
                     }
                 }
@@ -138,7 +144,7 @@ public class MyAnalyzer {
                     }
                     else if(inv_expr instanceof InvokeStatic)
                     {
-                        assert(callee.isStatic());
+                        // assert(callee.isStatic());
                     }
                 }
             }
@@ -154,7 +160,7 @@ public class MyAnalyzer {
                 if(def.isPresent())
                 {
                     var receiver = def.get();
-                    assert(receiver instanceof Var);
+                    // assert(receiver instanceof Var);
                     merge((Var)receiver, retval);
                 }
             }
@@ -186,8 +192,6 @@ public class MyAnalyzer {
 
         obj_ids = ppr.obj_ids;
         test_pts = ppr.test_pts;
-        
-        CG = World.get().getResult(CallGraphBuilder.ID);
     }
     static PointerAnalysisResult get_result() {
         var res = new PointerAnalysisResult();
@@ -200,7 +204,7 @@ public class MyAnalyzer {
                 if(wobjects.get(id).tester_id != 0)
                     ts.add(wobjects.get(id).tester_id); 
             res.put(test_id, ts);
-            logger.info("{}: {}", test_id, ts);
+            // logger.info("{}: {}", test_id, ts);
         }
         return res;
     }

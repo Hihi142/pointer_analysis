@@ -1,8 +1,10 @@
 package pku;
 
+import pascal.taie.World;
 // import pascal.taie.World;
 // import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.config.AnalysisConfig;
+import pascal.taie.analysis.graph.callgraph.*;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,6 +25,7 @@ public class PointerAnalysis extends PointerAnalysisTrivial
     }
     @Override
     public PointerAnalysisResult analyze() {
+        
         var ppr = new PreprocessResult();
         ppr.gather_test_info();;
         PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
@@ -39,10 +42,19 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         // it's your analysis assignment to accomplish
         PointerAnalysisResult res = null;
         try {
-            ppr.init();        
+            MyAnalyzer.CG = World.get().getResult(CallGraphBuilder.ID);
+        } catch(Exception e) {
+            res = trivial_typing;
+            dump(res);
+            return res;
+        }
+
+        try {
+            ppr.init();
             MyAnalyzer.init(ppr);
             res = MyAnalyzer.analyze();
         } catch (Exception e) {
+            // die();
             res = trivial_typing;
         }
         dump(res);

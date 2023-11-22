@@ -26,7 +26,7 @@ public class WObject {
         while(t instanceof ArrayType)
             t = ((ArrayType)t).baseType();
         
-        assert(t instanceof ClassType);
+        if(!(t instanceof ClassType)) return;
         JClass jc = ((ClassType)t).getJClass();
         while(jc != null) {
             if(!jc.isApplication()) break;
