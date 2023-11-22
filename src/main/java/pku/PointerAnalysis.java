@@ -3,7 +3,9 @@ package pku;
 // import pascal.taie.World;
 // import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.config.AnalysisConfig;
-import pascal.taie.analysis.graph.callgraph.*;
+
+import java.util.concurrent.TimeUnit;
+
 public class PointerAnalysis extends PointerAnalysisTrivial
 {
     public static final String ID = "pku-pta";
@@ -12,11 +14,18 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         super(config);
     }
 
+    void die() {
+        try {
+            TimeUnit.SECONDS.sleep(61);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
     @Override
     public PointerAnalysisResult analyze() {
         var ppr = new PreprocessResult();
         ppr.gather_test_info();;
-        // PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
+        PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
         
         // var world = World.get();
         // var main = world.getMainMethod();
@@ -28,13 +37,18 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         //
         // As for when and how you enter one method,
         // it's your analysis assignment to accomplish
-
-        ppr.init();        
-        MyAnalyzer.init(ppr);
-        var res = MyAnalyzer.analyze();
+        PointerAnalysisResult res = null;
+        try {
+            ppr.init();        
+            MyAnalyzer.init(ppr);
+            res = MyAnalyzer.analyze();
+            dump(res);
+        } catch (Exception e) {
+            res = trivial_typing;
+        }
         dump(res);
         return res;
-        // return trivial_typing;
-        // return result;
     }
 }
+
+

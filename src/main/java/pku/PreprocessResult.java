@@ -149,7 +149,7 @@ public class PreprocessResult {
     public void init() {
         count_pass();
         gather_static_pointers();
-        // MyDumper.dump(this);
+        MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }
