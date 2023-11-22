@@ -12,7 +12,6 @@ import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 import pascal.taie.ir.stmt.Stmt;
 import pascal.taie.language.type.Type;
-import pascal.taie.language.classes.JClass;
 import pascal.taie.language.type.ArrayType;
 import pascal.taie.language.type.ClassType;
 
@@ -91,7 +90,8 @@ public class PreprocessResult {
     static int var_num = 0;
 
     static boolean ispointer(Type t) {
-        assert(!(t instanceof ArrayType) );
+        while(t instanceof ArrayType)
+            t = ((ArrayType)t).baseType();
         return t instanceof ClassType;
     }
     Type dearray(Type t) {
@@ -119,7 +119,7 @@ public class PreprocessResult {
         }
         var varlist = ir.getVars();
         for(var v: varlist) {
-            if(ispointer(dearray(v.getType())))
+            if(ispointer(v.getType()))
             {
                 int id = var_num++;
                 v.var_id = id;
@@ -141,7 +141,9 @@ public class PreprocessResult {
             jclass.getDeclaredFields().forEach(field->{
                 if(field.isStatic())
                 {
-                    field.var_id = var_num++; 
+                    int id = var_num++;
+                    field.var_id = id; 
+                    wvars.add(new WVar(null, id));
                 }
             });
         });
@@ -149,7 +151,7 @@ public class PreprocessResult {
     public void init() {
         count_pass();
         gather_static_pointers();
-        MyDumper.dump(this);
+        // MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }

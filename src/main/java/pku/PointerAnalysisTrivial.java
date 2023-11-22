@@ -11,14 +11,8 @@ import org.apache.logging.log4j.Logger;
 import pascal.taie.World;
 import pascal.taie.analysis.ProgramAnalysis;
 import pascal.taie.analysis.misc.IRDumper;
-import pascal.taie.analysis.pta.core.cs.element.Pointer;
 import pascal.taie.config.AnalysisConfig;
-import pascal.taie.ir.IR;
-import pascal.taie.ir.IRPrinter;
-import pascal.taie.ir.exp.IntLiteral;
-import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
-import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 import pascal.taie.language.type.Type;
 

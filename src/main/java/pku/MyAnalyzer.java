@@ -1,6 +1,7 @@
 package pku;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -33,15 +34,12 @@ public class MyAnalyzer {
             return;
         int lid = merger.var_id;
         int rid = mergee.var_id;
-        if(lid < 0 || rid < 0)
-        {
-            return; 
-        }
+        if(lid < 0 || rid < 0) { return; }
         wvars.get(lid).pointee.merge(wvars.get(rid).pointee);
     }
     static void merge(int merger, int mergee)
     {
-        assert(merger >= 0 && mergee >= 0);
+        if(merger < 0 || mergee < 0) return;
         wvars.get(merger).pointee.merge(wvars.get(mergee).pointee);
     }
     static void update(Stmt stmt, JMethod jm) {
@@ -82,7 +80,6 @@ public class MyAnalyzer {
                     int mergee = r.var_id;
                     merge(merger, mergee);
                 }
-                else assert(false);
             }
             else if(stmt instanceof LoadField) 
             {
@@ -118,26 +115,25 @@ public class MyAnalyzer {
             }
             else if(stmt instanceof Invoke)
             {
-                
                 var inv_stmt = (Invoke)stmt;
                 var inv_expr = inv_stmt.getInvokeExp();
                 var callee_list = CG.getCalleesOf(inv_stmt);
                 var arg_list = inv_expr.getArgs();
                 for(var callee: callee_list)
                 {
-                    logger.info("{} invokes {}", stmt.get_stmt_id(), callee.getName());
+                    if(callee.isAbstract()) continue;
+                    // logger.info("{} invokes {}", stmt.get_stmt_id(), callee.getName());
                     var param_list = callee.getIR().getParams();
-                    assert(param_list.size() == arg_list.size());
                     for(int i = 0; i < param_list.size(); ++i) {
                         var merger = param_list.get(i);
                         var mergee = arg_list.get(i);
-                        logger.info("{} merges {}", merger.getName(), mergee.getName());
+                        // logger.info("{} merges {}", merger.getName(), mergee.getName());
                         merge(merger, mergee);
                     }
                     if(inv_expr instanceof InvokeInstanceExp)
                     {
                         var ths = callee.getIR().getThis();
-                        assert(ths != null);
+                        // assert(ths != null);
                         merge(ths, ((InvokeInstanceExp)inv_expr).getBase());
                     }
                     else if(inv_expr instanceof InvokeStatic)
@@ -151,8 +147,7 @@ public class MyAnalyzer {
         {
             var ret = (Return)stmt;
             var retval = ret.getValue();
-            assert(retval != null);
-            if(retval == null) return;
+            if(retval == null || jm.isConstructor()) return;
             var caller_list = CG.getCallersOf(jm);
             for(var caller: caller_list) {
                 var def = caller.getDef();
@@ -187,12 +182,11 @@ public class MyAnalyzer {
     static void init(PreprocessResult ppr) {
         wstmts = ppr.wstmts;
         wobjects = ppr.wobjects;
-        wvars = ppr.wvars;
+        wvars = PreprocessResult.wvars;
 
         obj_ids = ppr.obj_ids;
         test_pts = ppr.test_pts;
         
-
         CG = World.get().getResult(CallGraphBuilder.ID);
     }
     static PointerAnalysisResult get_result() {
@@ -203,12 +197,11 @@ public class MyAnalyzer {
             TreeSet<Integer> ts = new TreeSet<>();
             var pointees = wvars.get( entry.getValue().var_id ).pointee.lst;
             for(var id: pointees)
-                if(wobjects.get(id).tester_id > 0)
+                if(wobjects.get(id).tester_id != 0)
                     ts.add(wobjects.get(id).tester_id); 
             res.put(test_id, ts);
             logger.info("{}: {}", test_id, ts);
         }
-        logger.info("dick");
         return res;
     }
     static void update_pass() {
@@ -227,11 +220,9 @@ public class MyAnalyzer {
     static PointerAnalysisResult analyze() {
         int last = -1;
         while(PointsToSet.glb_cnt > last) {
-            logger.info("Shit\n");
             last = PointsToSet.glb_cnt;
             update_pass();
         }
-        logger.info("Fuck\n");
         return get_result();
     }
 }
