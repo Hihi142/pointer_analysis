@@ -23,23 +23,18 @@ public class MyAnalyzer {
     static ArrayList<WObject> wobjects;
     static ArrayList<WVar> wvars;
     static CallGraph<Invoke, JMethod> CG;
-    static boolean is_pointer(Type t) {
-        while(t instanceof ArrayType)
-            t = ((ArrayType)t).baseType();
-        return t instanceof ClassType;
+    static boolean ispointer(Type t) {
+        return t instanceof ClassType || t instanceof ArrayType;
     }
-    static void merge(Var merger, Var mergee)
-    {
+    static void merge(Var merger, Var mergee) {
         if(merger == null || mergee == null) return;
-        if(!is_pointer(merger.getType()) || !is_pointer(mergee.getType()))
-            return;
+        if(!ispointer(merger.getType()) || !ispointer(mergee.getType())) return;
         int lid = merger.var_id;
         int rid = mergee.var_id;
         if(lid < 0 || rid < 0) { return; }
         wvars.get(lid).pointee.merge(wvars.get(rid).pointee);
     }
-    static void merge(int merger, int mergee)
-    {
+    static void merge(int merger, int mergee) {
         if(merger < 0 || mergee < 0) return;
         wvars.get(merger).pointee.merge(wvars.get(mergee).pointee);
     }
@@ -68,7 +63,7 @@ public class MyAnalyzer {
                 {
                     int base_id = ((InstanceFieldAccess)l).getBase().var_id;
                     var jf = l.getFieldRef().resolveNullable();
-                    if(!is_pointer(jf.getType())) return;
+                    if(!ispointer(jf.getType())) return;
                     var str = jf.getName();
                     int rid = r.var_id;
                     for(var obj: wvars.get(base_id).pointee.lst) {
@@ -93,7 +88,7 @@ public class MyAnalyzer {
                 {
                     int base_id = ((InstanceFieldAccess)r).getBase().var_id;
                     var jf = r.getFieldRef().resolveNullable();
-                    if(!is_pointer(jf.getType())) return;
+                    if(!ispointer(jf.getType())) return;
                     var str = r.getFieldRef().resolveNullable().getName();
                     int lid = l.var_id;
                     for(var obj: wvars.get(base_id).pointee.lst) {
@@ -111,13 +106,75 @@ public class MyAnalyzer {
             }
             else if(stmt instanceof StoreArray)
             {
+                
                 var sa = (StoreArray)stmt;
-                merge(sa.getLValue().getBase(), sa.getRValue());
+                int base_id = sa.getLValue().getBase().var_id;
+                int rid = sa.getRValue().var_id;
+                if(sa.getRValue().getType() instanceof ArrayType)
+                {
+                    merge(base_id, rid);
+                }
+                else
+                {
+                    var index = sa.getLValue().getIndex().get_int_const();
+                    if(index != null)
+                    {
+                        if(index != 0)
+                        {
+                            for(var item: wvars.get(base_id).pointee.lst)
+                                merge(wobjects.get(item).ptr1, rid);
+                        }
+                        else 
+                        {
+                            for(var item: wvars.get(base_id).pointee.lst)
+                                merge(wobjects.get(item).ptr0, rid);
+                        }
+                    }
+                    else
+                    {
+                        for(var item: wvars.get(base_id).pointee.lst)
+                        {
+                            merge(wobjects.get(item).ptr0, rid);
+                            merge(wobjects.get(item).ptr1, rid);
+                        }
+                    }
+                }
             }
             else if(stmt instanceof LoadArray)
             {
                 var la = (LoadArray)stmt;
-                merge(la.getLValue(), la.getRValue().getBase());
+                int base_id = la.getRValue().getBase().var_id;
+                int lid = la.getLValue().var_id;
+
+                if(la.getLValue().getType() instanceof ArrayType)
+                {
+                    merge(lid, base_id);
+                }
+                else 
+                {
+                    var index = la.getRValue().getIndex().get_int_const();
+                    if(index != null) 
+                    {
+                        if(index != 0)
+                        {
+                            for(var item: wvars.get(base_id).pointee.lst) 
+                                merge(lid, wobjects.get(item).ptr1);
+                        }
+                        else 
+                        {
+                            for(var item: wvars.get(base_id).pointee.lst) 
+                                merge(lid, wobjects.get(item).ptr0);
+                        }
+                    }
+                    else 
+                    {
+                        for(var item: wvars.get(base_id).pointee.lst) 
+                        {
+                            merge(lid, wobjects.get(item).ptr0);
+                            merge(lid, wobjects.get(item).ptr1);
+                        }
+                    }
+                }
             }
             else if(stmt instanceof Invoke)
             {

@@ -4,10 +4,13 @@ package pku;
 import java.util.HashMap;
 
 import pascal.taie.World;
+import pascal.taie.analysis.misc.IRDumper;
 import pascal.taie.ir.IR;
 import pascal.taie.ir.exp.IntLiteral;
 import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
+import pascal.taie.ir.stmt.AssignStmt;
+import pascal.taie.ir.stmt.DefinitionStmt;
 import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 import pascal.taie.ir.stmt.Stmt;
@@ -17,10 +20,13 @@ import pascal.taie.language.type.ClassType;
 
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 
 public class PreprocessResult {
-    
+    private static final Logger logger = LogManager.getLogger(IRDumper.class);
     public final Map<New, Integer>obj_ids;
     public final Map<Integer, Var>test_pts;
     public void gather_test_info() {
@@ -90,14 +96,7 @@ public class PreprocessResult {
     static int var_num = 0;
 
     static boolean ispointer(Type t) {
-        while(t instanceof ArrayType)
-            t = ((ArrayType)t).baseType();
-        return t instanceof ClassType;
-    }
-    Type dearray(Type t) {
-        while(t instanceof ArrayType)
-            t = ((ArrayType)t).baseType();
-        return t;
+        return t instanceof ClassType || t instanceof ArrayType;
     }
     private void count_pass_ir(IR ir) {
         var stmts = ir.getStmts();
@@ -111,11 +110,28 @@ public class PreprocessResult {
             if(stmt instanceof New)
             {
                 var nw = (New)stmt; 
-                if(! ispointer(nw.getRValue().getType()) ) continue;
+                Type t = nw.getRValue().getType();
+                nw.object_id = object_num++;
                 if(obj_ids.containsKey(nw))
-                    wobjects.add(new WObject(nw, obj_ids.get(nw)));
+                    wobjects.add(new WObject(t, obj_ids.get(nw)));
                 else
-                    wobjects.add(new WObject(nw, 0));
+                    wobjects.add(new WObject(t, 0));
+            }
+            if(stmt instanceof DefinitionStmt)
+            {
+                var asgn = (DefinitionStmt)stmt;
+                var lhs = asgn.getLValue();
+                var rhs = asgn.getRValue();
+                if(lhs instanceof Var && lhs.getType().getName() == "int" )
+                {
+                    ((Var)lhs).assigns++;
+                    if(rhs instanceof IntLiteral)
+                    {
+                        var lit = (IntLiteral)rhs;
+                        ((Var)lhs).assign_value = lit.getNumber();
+                    }
+                    else ((Var)lhs).assigns = 666;
+                }
             }
         }
         var varlist = ir.getVars();
@@ -152,7 +168,7 @@ public class PreprocessResult {
     public void init() {
         count_pass();
         gather_static_pointers();
-        MyDumper.dump(this);
+        // MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }

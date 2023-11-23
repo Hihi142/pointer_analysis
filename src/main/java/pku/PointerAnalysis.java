@@ -23,6 +23,15 @@ public class PointerAnalysis extends PointerAnalysisTrivial
             e.printStackTrace();
         }
     }
+    
+    public void merge_result(PointerAnalysisResult merger, PointerAnalysisResult mergee)
+    {
+        for (Integer key : merger.keySet()) {
+            var merger_set = merger.get(key);
+            var mergee_set = mergee.get(key);
+            merger_set.retainAll(mergee_set);
+        }
+    }
     @Override
     public PointerAnalysisResult analyze() {
         
@@ -53,6 +62,7 @@ public class PointerAnalysis extends PointerAnalysisTrivial
             ppr.init();
             MyAnalyzer.init(ppr);
             res = MyAnalyzer.analyze();
+            merge_result(res, trivial_typing);
         } catch (Exception e) {
             // die();
             res = trivial_typing;

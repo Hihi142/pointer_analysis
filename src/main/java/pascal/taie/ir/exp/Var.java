@@ -49,6 +49,13 @@ import java.util.List;
 public class Var implements LValue, RValue, Indexable {
 
     public int var_id = -1;
+    public int assigns = 0;
+    public int assign_value = 0;
+    public Integer get_int_const() 
+    {
+        if(assigns != 1) return null;
+        else return assign_value;
+    }
     /**
      * The method containing this Var.
      */
