@@ -10,10 +10,13 @@ import pascal.taie.ir.exp.IntLiteral;
 import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.AssignStmt;
+import pascal.taie.ir.stmt.Cast;
+import pascal.taie.ir.stmt.Catch;
 import pascal.taie.ir.stmt.DefinitionStmt;
 import pascal.taie.ir.stmt.Invoke;
 import pascal.taie.ir.stmt.New;
 import pascal.taie.ir.stmt.Stmt;
+import pascal.taie.ir.stmt.Throw;
 import pascal.taie.language.type.Type;
 import pascal.taie.language.type.ArrayType;
 import pascal.taie.language.type.ClassType;
@@ -95,6 +98,9 @@ public class PreprocessResult {
     static int object_num = 0;
     static int var_num = 0;
 
+    static boolean cast_found = false;
+    static boolean exception_found = false;
+
     static boolean ispointer(Type t) {
         return t instanceof ClassType || t instanceof ArrayType;
     }
@@ -133,6 +139,10 @@ public class PreprocessResult {
                     else ((Var)lhs).assigns = 666;
                 }
             }
+            if(stmt instanceof Cast)
+                throw(new NullPointerException());
+            if(stmt instanceof Throw || stmt instanceof Catch)
+                exception_found = true;
         }
         var varlist = ir.getVars();
         for(var v: varlist) {
@@ -169,6 +179,7 @@ public class PreprocessResult {
         count_pass();
         gather_static_pointers();
         // MyDumper.dump(this);
+        logger.info("Cast Found: {}", cast_found);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }
