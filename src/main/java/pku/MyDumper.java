@@ -47,7 +47,10 @@ public class MyDumper {
                     logger.info("    Called times: {}", method.wrapper.versions);
                     logger.info("    Possible Callers: {}", method.wrapper.returnee.size());
                     for(var stmt: method.wrapper.returnee)
-                        logger.info("      {}", stmt.get_stmt_id());
+                    {
+                        if(stmt == null) logger.info("      Ghost Caller");
+                        else logger.info("      {}", stmt.get_stmt_id());
+                    }
                     logger.info("    Param List: {}", ir.getParams());
                     logger.info("    this-pointer: {}", ir.getThis());
                     dump_method(method.getIR());

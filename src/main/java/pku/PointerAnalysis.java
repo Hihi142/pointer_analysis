@@ -64,7 +64,6 @@ public class PointerAnalysis extends PointerAnalysisTrivial
             res = MyAnalyzer.analyze();
             merge_result(res, trivial_typing);
         } catch (Exception e) {
-            // die();
             res = trivial_typing;
         }
         dump(res);

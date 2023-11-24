@@ -92,9 +92,6 @@ public class PreprocessResult {
             };
         });
 
-        var wmain = World.get().getMainMethod().wrapper;
-        wmain.versions++;
-
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             for(var method: jclass.getDeclaredMethods()) {
                 if(method.isAbstract()) continue;
@@ -112,6 +109,19 @@ public class PreprocessResult {
                         inv.callee_versions.add(wcallee.versions++);
                         wcallee.returnee.add(inv);
                     }
+                }
+            };
+        });
+
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            for(var method: jclass.getDeclaredMethods()) {
+                if(method.isAbstract()) continue;
+                var wjm = method.wrapper;
+                var stmts = method.getIR().getStmts();
+                if(wjm.versions == 0)
+                {
+                    wjm.versions++;
+                    wjm.returnee.add(null);
                 }
             };
         });
@@ -229,7 +239,7 @@ public class PreprocessResult {
         method_init();
         count_pass();
         gather_static_pointers();
-        MyDumper.dump(this);
+        // MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }
