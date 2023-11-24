@@ -35,12 +35,14 @@ import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.proginfo.MethodRef;
 import pascal.taie.language.classes.JMethod;
 import pascal.taie.util.collection.ArraySet;
+import pku.WMethod;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.Set;
+import java.util.ArrayList;
 
 /**
  * Representation of invocation statement, e.g., r = o.m(...) or o.m(...).
@@ -53,7 +55,10 @@ public class Invoke extends DefinitionStmt<Var, InvokeExp>
      * is null if no variable receives the invocation result, e.g., o.m(...).
      */
     public int call_id;
+    public ArrayList< WMethod >callees;
+    public ArrayList< Integer >callee_versions;
 
+    
     @Nullable
     private final Var result;
 

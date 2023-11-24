@@ -80,15 +80,51 @@ public class PreprocessResult {
         });
     }
 
-    public ArrayList<WStmt> wstmts;
+    public ArrayList<WMethod> wmethods;
+    private void method_init() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            for(var method: jclass.getDeclaredMethods()) {
+                if(method.isAbstract()) continue;
+                WMethod wm = new WMethod(method);
+                wmethods.add(wm);
+                method.wrapper = wm;
+            };
+        });
+
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            for(var method: jclass.getDeclaredMethods()) {
+                if(method.isAbstract()) continue;
+                var stmts = method.getIR().getStmts();
+                for(var stmt: stmts) {
+                    if(!(stmt instanceof Invoke)) continue;
+                    var inv = (Invoke)stmt;
+                    inv.callee_versions = new ArrayList<>();
+                    inv.callees = new ArrayList<>();
+                    var callee_list = MyAnalyzer.CG.getCalleesOf(inv);
+                    for(var callee: callee_list)
+                    {
+                        if(callee.isAbstract()) continue;
+                        if(callee.wrapper == null) continue;
+                        var wcallee = callee.wrapper;
+                        inv.callees.add(wcallee);
+                        inv.callee_versions.add(wcallee.versions++);
+                        wcallee.returnee.add(inv);
+                    }
+                }
+            };
+        });
+    }
+
     public ArrayList<WObject> wobjects;
     static ArrayList<WVar> wvars;
+    
+
     public PreprocessResult(){
         obj_ids = new HashMap<New, Integer>();
         test_pts = new HashMap<Integer,Var>();
-        wstmts = new ArrayList<WStmt>();
         wobjects = new ArrayList<WObject>();
         wvars = new ArrayList<WVar>();
+        wmethods = new ArrayList<>();
     }
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
     public void test(int id, Var v) { test_pts.put(id, v); }
@@ -100,6 +136,9 @@ public class PreprocessResult {
 
     static boolean cast_found = false;
     static boolean exception_found = false;
+
+    
+
 
     static boolean ispointer(Type t) {
         return t instanceof ClassType || t instanceof ArrayType;
@@ -140,7 +179,10 @@ public class PreprocessResult {
                 }
             }
             if(stmt instanceof Cast)
-                throw(new NullPointerException());
+            {
+                cast_found = true;
+                // throw(new NullPointerException());
+            }
             if(stmt instanceof Throw || stmt instanceof Catch)
                 exception_found = true;
         }
@@ -176,9 +218,10 @@ public class PreprocessResult {
         });
     }
     public void init() {
+        method_init();
         count_pass();
         gather_static_pointers();
-        // MyDumper.dump(this);
+        MyDumper.dump(this);
         logger.info("Cast Found: {}", cast_found);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);

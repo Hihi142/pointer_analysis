@@ -37,6 +37,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import pku.WMethod;
 
 /**
  * Represents methods in the program. Each instance contains various
@@ -52,6 +53,8 @@ public class JMethod extends ClassMember {
     private final List<ClassType> exceptions;
 
     private final Subsignature subsignature;
+
+    public WMethod wrapper;
 
     @Nullable
     @Experimental

@@ -20,7 +20,6 @@ import pascal.taie.language.classes.ClassHierarchy;;
 
 public class MyAnalyzer {
     private static final Logger logger = LogManager.getLogger(IRDumper.class);
-    static ArrayList<WStmt> wstmts;
     static ArrayList<WObject> wobjects;
     static ArrayList<WVar> wvars;
     static CallGraph<Invoke, JMethod> CG;
@@ -41,17 +40,18 @@ public class MyAnalyzer {
         wvars.get(merger).pointee.merge(wvars.get(mergee).pointee);
     }
     static boolean call_possible(Var caller, JMethod callee) {
-        if(PreprocessResult.cast_found) return true;
-        var callee_class = callee.getDeclaringClass();
-        var obj_list = wvars.get(caller.var_id).pointee.lst;
-        for(var obj: obj_list) {
-            Type obj_type = wobjects.get(obj).t;
-            if( !(obj_type instanceof ClassType) ) continue;
-            var obj_class = ((ClassType)obj_type).getJClass();
-            if( CH.isSubclass(callee_class, obj_class)|| CH.isSubclass(obj_class, callee_class) )
-                return true;
-        }
-        return false;
+        return true;
+        // if(PreprocessResult.cast_found) return true;
+        // var callee_class = callee.getDeclaringClass();
+        // var obj_list = wvars.get(caller.var_id).pointee.lst;
+        // for(var obj: obj_list) {
+        //     Type obj_type = wobjects.get(obj).t;
+        //     if( !(obj_type instanceof ClassType) ) continue;
+        //     var obj_class = ((ClassType)obj_type).getJClass();
+        //     if( CH.isSubclass(callee_class, obj_class)|| CH.isSubclass(obj_class, callee_class) )
+        //         return true;
+        // }
+        // return false;
     }
     static void update(Stmt stmt, JMethod jm) {
         if(stmt instanceof DefinitionStmt)
@@ -195,12 +195,13 @@ public class MyAnalyzer {
             {
                 var inv_stmt = (Invoke)stmt;
                 var inv_expr = inv_stmt.getInvokeExp();
-                var callee_list = CG.getCalleesOf(inv_stmt);
+                var callee_list = inv_stmt.callees;
                 var arg_list = inv_expr.getArgs();
                 if(inv_expr instanceof InvokeStatic)
                 {
-                    for(var callee: callee_list)
+                    for(var wcallee: callee_list)
                     {
+                        var callee = wcallee.jm;
                         if(callee.isAbstract()) continue;
                         var param_list = callee.getIR().getParams();
                         for(int i = 0; i < param_list.size(); ++i) {
@@ -213,8 +214,9 @@ public class MyAnalyzer {
                 }
                 else 
                 {
-                    for(var callee: callee_list)
+                    for(var wcallee: callee_list)
                     {
+                        var callee = wcallee.jm;
                         if(callee.isAbstract()) continue;
                         // logger.info("{} invokes {}", stmt.get_stmt_id(), callee.getName());
                         // logger.info("{}", call_possible(((InvokeInstanceExp)inv_expr).getBase(), callee));
@@ -239,7 +241,7 @@ public class MyAnalyzer {
             var ret = (Return)stmt;
             var retval = ret.getValue();
             if(retval == null || jm.isConstructor()) return;
-            var caller_list = CG.getCallersOf(jm);
+            var caller_list = jm.wrapper.returnee;
             for(var caller: caller_list) {
                 var def = caller.getDef();
                 if(def.isPresent())
@@ -280,7 +282,6 @@ public class MyAnalyzer {
     static Map<New, Integer>obj_ids;
     static Map<Integer, Var>test_pts;
     static void init(PreprocessResult ppr) {
-        wstmts = ppr.wstmts;
         wobjects = ppr.wobjects;
         wvars = PreprocessResult.wvars;
 
