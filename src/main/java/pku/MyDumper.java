@@ -18,15 +18,15 @@ public class MyDumper {
         for (var stmt : stmts) {
             logger.info("    " + IRPrinter.toString(stmt));
             if(stmt instanceof Invoke)
-                logger.info("    // Calling ID: " + Integer.toString(((Invoke)stmt).call_id));
+                logger.info("    // Calling ID: {}" + (((Invoke)stmt).call_id));
             if(stmt instanceof New)
-                logger.info("    // Object ID: " + Integer.toString(((New)stmt).object_id));
+                logger.info("    // Object ID: {}" + (((New)stmt).object_id));
             var wlval = stmt.getDef();
             if(wlval.isPresent())
             {
                 var lval = wlval.get();
-                if(lval instanceof Var && ((Var)lval).var_id >= 0)
-                    logger.info("    // Pointer ID: " + Integer.toString( ((Var)lval).var_id ));
+                if(lval instanceof Var)
+                    logger.info("    // Pointer ID: {}" + ( ((Var)lval).var_id ));
             } 
         }
     }
@@ -38,8 +38,9 @@ public class MyDumper {
                 if(!method.isAbstract())
                 {
                     var ir = method.getIR();
-                    logger.info("  Param List: {}", ir.getParams());
-                    logger.info("  this-pointer: {}", ir.getThis());
+                    logger.info("    Called times: {}", method.wrapper.versions);
+                    logger.info("    Param List: {}", ir.getParams());
+                    logger.info("    this-pointer: {}", ir.getThis());
                     dump_method(method.getIR());
                 }
             });

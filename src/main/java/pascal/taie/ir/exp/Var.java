@@ -48,7 +48,7 @@ import java.util.List;
  */
 public class Var implements LValue, RValue, Indexable {
 
-    public int var_id = -1;
+    public ArrayList<Integer> var_id = new ArrayList<>();
     public int assigns = 0;
     public int assign_value = 0;
     public Integer get_int_const() 

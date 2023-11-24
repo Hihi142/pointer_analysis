@@ -25,7 +25,7 @@ package pascal.taie.ir.stmt;
 import pascal.taie.ir.exp.NewExp;
 import pascal.taie.ir.exp.Var;
 import pascal.taie.language.classes.JMethod;
-
+import java.util.ArrayList;
 /**
  * Representation of following kinds of new statements:
  * <ul>
@@ -39,7 +39,7 @@ public class New extends AssignStmt<Var, NewExp> {
     /**
      * The method containing this new statement.
      */
-    public int object_id = -1;
+    public ArrayList<Integer> object_id = new ArrayList<>();
     private final JMethod container;
 
     public New(JMethod method, Var lvalue, NewExp rvalue) {

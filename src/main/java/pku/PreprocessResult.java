@@ -20,6 +20,7 @@ import pascal.taie.ir.stmt.Throw;
 import pascal.taie.language.type.Type;
 import pascal.taie.language.type.ArrayType;
 import pascal.taie.language.type.ClassType;
+import pascal.taie.language.classes.JMethod;
 
 import java.util.Map;
 
@@ -32,6 +33,8 @@ public class PreprocessResult {
     private static final Logger logger = LogManager.getLogger(IRDumper.class);
     public final Map<New, Integer>obj_ids;
     public final Map<Integer, Var>test_pts;
+    public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
+    public void test(int id, Var v) { test_pts.put(id, v); }
     public void gather_test_info() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             jclass.getDeclaredMethods().forEach(method->{
@@ -80,16 +83,17 @@ public class PreprocessResult {
         });
     }
 
-    public ArrayList<WMethod> wmethods;
     private void method_init() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             for(var method: jclass.getDeclaredMethods()) {
                 if(method.isAbstract()) continue;
                 WMethod wm = new WMethod(method);
-                wmethods.add(wm);
                 method.wrapper = wm;
             };
         });
+
+        var wmain = World.get().getMainMethod().wrapper;
+        wmain.versions++;
 
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             for(var method: jclass.getDeclaredMethods()) {
@@ -98,8 +102,6 @@ public class PreprocessResult {
                 for(var stmt: stmts) {
                     if(!(stmt instanceof Invoke)) continue;
                     var inv = (Invoke)stmt;
-                    inv.callee_versions = new ArrayList<>();
-                    inv.callees = new ArrayList<>();
                     var callee_list = MyAnalyzer.CG.getCalleesOf(inv);
                     for(var callee: callee_list)
                     {
@@ -124,10 +126,7 @@ public class PreprocessResult {
         test_pts = new HashMap<Integer,Var>();
         wobjects = new ArrayList<WObject>();
         wvars = new ArrayList<WVar>();
-        wmethods = new ArrayList<>();
     }
-    public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
-    public void test(int id, Var v) { test_pts.put(id, v); }
 
     static int call_num = 0;
     static int stmt_num = 0;
@@ -137,61 +136,68 @@ public class PreprocessResult {
     static boolean cast_found = false;
     static boolean exception_found = false;
 
-    
+    void first_pass() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            for(var method: jclass.getDeclaredMethods()) {
+                if(method.isAbstract()) continue;
+                var stmts = method.getIR().getStmts();
+                for (Stmt stmt : stmts) {
+                    if(stmt instanceof DefinitionStmt) {
+                        var asgn = (DefinitionStmt)stmt;
+                        var lhs = asgn.getLValue();
+                        var rhs = asgn.getRValue();
+                        if(lhs instanceof Var && lhs.getType().getName() == "int" )
+                        {
+                            ((Var)lhs).assigns++;
+                            if(rhs instanceof IntLiteral)
+                            {
+                                var lit = (IntLiteral)rhs;
+                                ((Var)lhs).assign_value = lit.getNumber();
+                            }
+                            else ((Var)lhs).assigns = 666;
+                        }
+                    }
+                    if(stmt instanceof Cast) {
+                        cast_found = true;
+                        throw(new NullPointerException());
+                    }
+                    stmt.set_stmt_id(stmt_num++);
+                    if(stmt instanceof Invoke) {
+                        var invoke = (Invoke)stmt;
+                        invoke.call_id = ++call_num;
+                    }
+                    if(stmt instanceof Throw || stmt instanceof Catch)
+                        exception_found = true;
+                }
+            }
+        });
+    }
 
 
     static boolean ispointer(Type t) {
         return t instanceof ClassType || t instanceof ArrayType;
     }
-    private void count_pass_ir(IR ir) {
+    private void count_pass_method(JMethod jm, int version) {
+        var ir = jm.getIR();
         var stmts = ir.getStmts();
         for (Stmt stmt : stmts) {
-            stmt.set_stmt_id(stmt_num++);
-            if(stmt instanceof Invoke)
-            {
-                var invoke = (Invoke)stmt;
-                invoke.call_id = ++call_num;
-            }
             if(stmt instanceof New)
             {
                 var nw = (New)stmt; 
                 Type t = nw.getRValue().getType();
-                nw.object_id = object_num++;
+                int obj_id = object_num++;
+                nw.object_id.add(obj_id);
                 if(obj_ids.containsKey(nw))
                     wobjects.add(new WObject(t, obj_ids.get(nw)));
                 else
                     wobjects.add(new WObject(t, 0));
             }
-            if(stmt instanceof DefinitionStmt)
-            {
-                var asgn = (DefinitionStmt)stmt;
-                var lhs = asgn.getLValue();
-                var rhs = asgn.getRValue();
-                if(lhs instanceof Var && lhs.getType().getName() == "int" )
-                {
-                    ((Var)lhs).assigns++;
-                    if(rhs instanceof IntLiteral)
-                    {
-                        var lit = (IntLiteral)rhs;
-                        ((Var)lhs).assign_value = lit.getNumber();
-                    }
-                    else ((Var)lhs).assigns = 666;
-                }
-            }
-            if(stmt instanceof Cast)
-            {
-                cast_found = true;
-                // throw(new NullPointerException());
-            }
-            if(stmt instanceof Throw || stmt instanceof Catch)
-                exception_found = true;
         }
         var varlist = ir.getVars();
         for(var v: varlist) {
-            if(ispointer(v.getType()))
-            {
+            if(ispointer(v.getType())) {
                 int id = var_num++;
-                v.var_id = id;
+                v.var_id.add(id);
                 WVar wv = new WVar(v, id);
                 wvars.add(wv);
             }
@@ -199,30 +205,30 @@ public class PreprocessResult {
     }
     private void count_pass() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            jclass.getDeclaredMethods().forEach(method->{
-                if(!method.isAbstract())
-                    count_pass_ir(method.getIR());
-            });
+            for(var method: jclass.getDeclaredMethods()) {
+                if(method.isAbstract()) continue;
+                var wmethod = method.wrapper;
+                for(int i = 0; i < wmethod.versions; ++i)
+                    count_pass_method(method, i);
+            }
         });
     }
     private void gather_static_pointers() {
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{    
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             jclass.getDeclaredFields().forEach(field->{
-                if(field.isStatic() && ispointer(field.getType()))
-                {
+                if(field.isStatic() && ispointer(field.getType())) {
                     int id = var_num++;
-                    field.var_id = id; 
+                    field.var_id = id;
                     wvars.add(new WVar(null, id));
                 }
             });
         });
     }
     public void init() {
+        first_pass();
         method_init();
         count_pass();
         gather_static_pointers();
-        MyDumper.dump(this);
-        logger.info("Cast Found: {}", cast_found);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }
