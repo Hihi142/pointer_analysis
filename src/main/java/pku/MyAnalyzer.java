@@ -1,7 +1,6 @@
 package pku;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -39,22 +38,21 @@ public class MyAnalyzer {
         if(merger < 0 || mergee < 0) return;
         wvars.get(merger).pointee.merge(wvars.get(mergee).pointee);
     }
-    static boolean call_possible(Var caller, JMethod callee) {
-        return true;
-        // if(PreprocessResult.cast_found) return true;
-        // var callee_class = callee.getDeclaringClass();
-        // var var_id_list = caller.var_id;
+    static boolean call_possible(Var caller, int version, JMethod callee) {
+        var callee_class = callee.getDeclaringClass();
+        var var_id_list = caller.var_id;
+        var var_id =var_id_list.get(version);
         // for(var var_id: var_id_list) {
-        //     var obj_list = wvars.get(var_id).pointee.lst;
-        //     for(var obj: obj_list) {
-        //         Type obj_type = wobjects.get(obj).t;
-        //         if( !(obj_type instanceof ClassType) ) continue;
-        //         var obj_class = ((ClassType)obj_type).getJClass();
-        //         if( CH.isSubclass(callee_class, obj_class)|| CH.isSubclass(obj_class, callee_class) )
-        //             return true;
-        //     }
+            var obj_list = wvars.get(var_id).pointee.lst;
+            for(var obj: obj_list) {
+                Type obj_type = wobjects.get(obj).t;
+                if( !(obj_type instanceof ClassType) ) continue;
+                var obj_class = ((ClassType)obj_type).getJClass();
+                if( CH.isSubclass(callee_class, obj_class) )
+                    return true;
+            }
         // }
-        // return false;
+        return false;
     }
     static void update(Stmt stmt, WMethod wjm, int version) {
         if(stmt instanceof DefinitionStmt)
@@ -205,18 +203,15 @@ public class MyAnalyzer {
                     for(int j = 0; j < inv_stmt.callees.size(); ++j)
                     {
                         var callee = inv_stmt.callees.get(j).jm;
-                        // for(int callee_version = 0; callee_version < callee.wrapper.versions; ++callee_version)
-                        // {
-                                var callee_version = inv_stmt.callee_versions.get(j);
-                            if(callee.isAbstract()) continue;
-                            var param_list = callee.getIR().getParams();
-                            for(int i = 0; i < param_list.size(); ++i) {
-                                var merger = param_list.get(i);
-                                var mergee = arg_list.get(i);
-                                if(!ispointer(merger.getType()) || !ispointer(mergee.getType())) continue;
-                                merge(merger.var_id.get(callee_version), mergee.var_id.get(version));
-                            }
-                        // }
+                        var callee_version = inv_stmt.callee_versions.get(j);
+                        if(callee.isAbstract()) continue;
+                        var param_list = callee.getIR().getParams();
+                        for(int i = 0; i < param_list.size(); ++i) {
+                            var merger = param_list.get(i);
+                            var mergee = arg_list.get(i);
+                            if(!ispointer(merger.getType()) || !ispointer(mergee.getType())) continue;
+                            merge(merger.var_id.get(callee_version), mergee.var_id.get(version));
+                        }
                     }
                 }
                 else 
@@ -224,24 +219,22 @@ public class MyAnalyzer {
                     for(int j = 0; j < inv_stmt.callees.size(); ++j)
                     {
                         var callee = inv_stmt.callees.get(j).jm;
-                        // for(int callee_version = 0; callee_version < callee.wrapper.versions; ++callee_version)
-                        // {
-                            var callee_version = inv_stmt.callee_versions.get(j);
-                            if(callee.isAbstract()) continue;
-                            if(!call_possible( ((InvokeInstanceExp)inv_expr).getBase(), callee)) continue;
+                        var callee_version = inv_stmt.callee_versions.get(j);
+                        if(callee.isAbstract()) continue;
+                        if(!call_possible( ((InvokeInstanceExp)inv_expr).getBase(), version, callee)) continue;
 
-                            var param_list = callee.getIR().getParams();
-                            for(int i = 0; i < param_list.size(); ++i) {
-                                var merger = param_list.get(i);
-                                var mergee = arg_list.get(i);
-                                // logger.info("{} merges {}", merger.getName(), mergee.getName());
-                                if(!ispointer(merger.getType()) || !ispointer(mergee.getType())) continue;
-                                merge(merger.var_id.get(callee_version), mergee.var_id.get(version));
-                            }
-                            var ths = callee.getIR().getThis();
-                            // assert(ths != null);
-                            merge(ths.var_id.get(callee_version), ((InvokeInstanceExp)inv_expr).getBase().var_id.get(version));
-                        // }
+                        var param_list = callee.getIR().getParams();
+                        for(int i = 0; i < param_list.size(); ++i) {
+                            var merger = param_list.get(i);
+                            var mergee = arg_list.get(i);
+                            // logger.info("{} merges {}", merger.getName(), mergee.getName());
+                            if(!ispointer(merger.getType()) || !ispointer(mergee.getType())) continue;
+                            merge(merger.var_id.get(callee_version), mergee.var_id.get(version));
+                        }
+                        var ths = callee.getIR().getThis();
+                        // assert(ths != null);
+                        merge(ths.var_id.get(callee_version), ((InvokeInstanceExp)inv_expr).getBase().var_id.get(version));
+
                     }
                 }
             }
@@ -270,25 +263,41 @@ public class MyAnalyzer {
                     }
                     // if(inv_expr instanceof InvokeInstanceExp)
                     // assert(receiver instanceof Var);
-                    else if(call_possible(((InvokeInstanceExp)caller.getRValue()).getBase(), jm))
+                    else
                     {
-                        for(var receiver_id: ((Var)receiver).var_id)
-                            merge(receiver_id, retval.var_id.get(version));
+                        var caller_var = ((InvokeInstanceExp)caller.getRValue()).getBase();
+                        var receiver_ids = ((Var)receiver).var_id;
+                        for(int i = 0; i < receiver_ids.size(); ++i)
+                            if(call_possible(caller_var, i, jm))
+                                merge(receiver_ids.get(i), retval.var_id.get(version));
+                        // for(var receiver_id: ((Var)receiver).var_id)
+                            // merge(receiver_id, retval.var_id.get(version));
                     }
                 }
-            // }
         }
     }
 
     static Map<New, Integer>obj_ids;
     static Map<Integer, Var>test_pts;
+    static void update_pass() {
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            for(var method: jclass.getDeclaredMethods()) {
+                if(method.isAbstract()) continue;
+                var wmethod = method.wrapper;
+                if(wmethod == null) continue;
+                var ir = method.getIR();
+                var stmts = ir.getStmts();
+                for(int i = 0; i < wmethod.versions; ++i)
+                    for(var stmt : stmts) 
+                        update(stmt, wmethod, i);
+            };
+        });
+    }
     static void init(PreprocessResult ppr) {
         wobjects = ppr.wobjects;
         wvars = PreprocessResult.wvars;
-
         obj_ids = ppr.obj_ids;
         test_pts = ppr.test_pts;
-
         CH = World.get().getClassHierarchy();
     }
     static PointerAnalysisResult get_result() {
@@ -309,20 +318,6 @@ public class MyAnalyzer {
             logger.info("{}: {}", test_id, ts);
         }
         return res;
-    }
-    static void update_pass() {
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            for(var method: jclass.getDeclaredMethods()) {
-                if(method.isAbstract()) continue;
-                var wmethod = method.wrapper;
-                if(wmethod == null) continue;
-                var ir = method.getIR();
-                var stmts = ir.getStmts();
-                for(int i = 0; i < wmethod.versions; ++i)
-                    for(var stmt : stmts) 
-                        update(stmt, wmethod, i);
-            };
-        });
     }
     static PointerAnalysisResult analyze() {
         int last = -1;

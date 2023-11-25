@@ -39,16 +39,6 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         ppr.gather_test_info();;
         PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
         
-        // var world = World.get();
-        // var main = world.getMainMethod();
-        // var jclass = main.getDeclaringClass();
-
-        // You need to use `preprocess` like in PointerAnalysisTrivial
-        // when you enter one method to collect infomation given by
-        // Benchmark.alloc(id) and Benchmark.test(id, var)
-        //
-        // As for when and how you enter one method,
-        // it's your analysis assignment to accomplish
         PointerAnalysisResult res = null;
         try {
             MyAnalyzer.CG = World.get().getResult(CallGraphBuilder.ID);

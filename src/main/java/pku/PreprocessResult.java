@@ -4,19 +4,10 @@ package pku;
 import java.util.HashMap;
 
 import pascal.taie.World;
-import pascal.taie.analysis.misc.IRDumper;
-import pascal.taie.ir.IR;
 import pascal.taie.ir.exp.IntLiteral;
 import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
-import pascal.taie.ir.stmt.AssignStmt;
-import pascal.taie.ir.stmt.Cast;
-import pascal.taie.ir.stmt.Catch;
-import pascal.taie.ir.stmt.DefinitionStmt;
-import pascal.taie.ir.stmt.Invoke;
-import pascal.taie.ir.stmt.New;
-import pascal.taie.ir.stmt.Stmt;
-import pascal.taie.ir.stmt.Throw;
+import pascal.taie.ir.stmt.*;
 import pascal.taie.language.type.Type;
 import pascal.taie.language.type.ArrayType;
 import pascal.taie.language.type.ClassType;
@@ -24,13 +15,9 @@ import pascal.taie.language.classes.JMethod;
 
 import java.util.Map;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import java.util.ArrayList;
 
 public class PreprocessResult {
-    private static final Logger logger = LogManager.getLogger(IRDumper.class);
     public final Map<New, Integer>obj_ids;
     public final Map<Integer, Var>test_pts;
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
@@ -117,7 +104,6 @@ public class PreprocessResult {
             for(var method: jclass.getDeclaredMethods()) {
                 if(method.isAbstract()) continue;
                 var wjm = method.wrapper;
-                var stmts = method.getIR().getStmts();
                 if(wjm.versions == 0)
                 {
                     wjm.versions++;
