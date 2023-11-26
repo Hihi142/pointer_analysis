@@ -55,8 +55,8 @@ public class Invoke extends DefinitionStmt<Var, InvokeExp>
      * is null if no variable receives the invocation result, e.g., o.m(...).
      */
     public int call_id;
-    public ArrayList< WMethod >callees = new ArrayList<>();
-    public ArrayList< Integer >callee_versions = new ArrayList<>();
+    public ArrayList< ArrayList<WMethod> >callees = new ArrayList<>();
+    public ArrayList< ArrayList<Integer> >callee_versions = new ArrayList<>();
 
     
     @Nullable

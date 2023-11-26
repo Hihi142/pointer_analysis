@@ -4,6 +4,7 @@ package pku;
 import java.util.HashMap;
 
 import pascal.taie.World;
+import pascal.taie.analysis.misc.IRDumper;
 import pascal.taie.ir.exp.IntLiteral;
 import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
@@ -15,9 +16,15 @@ import pascal.taie.language.classes.JMethod;
 
 import java.util.Map;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.util.ArrayList;
 
 public class PreprocessResult {
+
+    private static final Logger logger = LogManager.getLogger(IRDumper.class);
+
     public final Map<New, Integer>obj_ids;
     public final Map<Integer, Var>test_pts;
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
@@ -70,6 +77,51 @@ public class PreprocessResult {
         });
     }
 
+
+    int[] stk = new int[1000000];
+    int top = 0;
+    long get_context_value() {
+        return stk[top];
+        // if(top == 0) return 0;
+        // else if(top == 1) return stk[1];
+        // else return (stk[top] + stk[top - 1] * 100003l) % 1000000007l;
+    }
+    private void dfs(WMethod wm, int version) {
+        // logger.info("starting dfs: {}[{}]", wm.jm.getName(), version);
+        var stmts = wm.jm.getIR().getStmts();
+        for(var stmt: stmts) {
+            if(!(stmt instanceof Invoke)) continue;
+            var inv = (Invoke)stmt;
+            var callee_list = MyAnalyzer.CG.getCalleesOf(inv);
+            // logger.info("   invoke {}", callee_list.size());
+
+            for(var callee: callee_list)
+            {
+                // logger.info("    {}", callee.getName());
+                if(callee.isAbstract()) continue;
+                var wcallee = callee.wrapper;
+                if(wcallee == null) continue;
+                // logger.info("   valid invoke");
+
+                stk[++top] = wcallee.id + inv.call_id * 4321;
+                long context = get_context_value();
+                if(wcallee.rem.containsKey(context)) {
+                    int callee_version = wcallee.rem.get(context);
+                    // logger.info("{}[{}]     ->    {}[{}].", wm.jm.getName(), version, wcallee.jm.getName(), callee_version);
+                    wcallee.link_caller(inv, version, callee_version);
+                }
+                else {
+                    int callee_version = wcallee.new_version();
+                    wcallee.link_caller(inv, version, callee_version);
+                    wcallee.rem.put(context, callee_version);
+                    // logger.info("{}[{}]     ->    {}[{}].", wm.jm.getName(), version, wcallee.jm.getName(), callee_version);
+                    dfs(wcallee, callee_version);
+                }
+                top--;
+            }
+        }
+        // logger.info("ending dfs: {}[{}]", wm.jm.getName(), version);
+    }
     private void method_init() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             for(var method: jclass.getDeclaredMethods()) {
@@ -82,34 +134,15 @@ public class PreprocessResult {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
             for(var method: jclass.getDeclaredMethods()) {
                 if(method.isAbstract()) continue;
-                var stmts = method.getIR().getStmts();
-                for(var stmt: stmts) {
-                    if(!(stmt instanceof Invoke)) continue;
-                    var inv = (Invoke)stmt;
-                    var callee_list = MyAnalyzer.CG.getCalleesOf(inv);
-                    for(var callee: callee_list)
-                    {
-                        if(callee.isAbstract()) continue;
-                        if(callee.wrapper == null) continue;
-                        var wcallee = callee.wrapper;
-                        inv.callees.add(wcallee);
-                        inv.callee_versions.add(wcallee.versions++);
-                        wcallee.returnee.add(inv);
-                    }
-                }
-            };
-        });
-
-        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
-            for(var method: jclass.getDeclaredMethods()) {
-                if(method.isAbstract()) continue;
-                var wjm = method.wrapper;
-                if(wjm.versions == 0)
-                {
-                    wjm.versions++;
-                    wjm.returnee.add(null);
-                }
-            };
+                var wm = method.wrapper;
+                if(wm == null) continue;
+                if(wm.versions > 0) continue;
+                int version = wm.new_version();
+                top = 1;
+                stk[top] = ++call_num;
+                // logger.info("");
+                dfs(wm, version);
+            }
         });
     }
 
@@ -128,9 +161,6 @@ public class PreprocessResult {
     static int stmt_num = 0;
     static int object_num = 0;
     static int var_num = 0;
-
-    static boolean cast_found = false;
-    static boolean exception_found = false;
 
     void first_pass() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
@@ -154,7 +184,6 @@ public class PreprocessResult {
                         }
                     }
                     if(stmt instanceof Cast) {
-                        cast_found = true;
                         throw(new NullPointerException());
                     }
                     stmt.set_stmt_id(stmt_num++);
@@ -162,8 +191,6 @@ public class PreprocessResult {
                         var invoke = (Invoke)stmt;
                         invoke.call_id = ++call_num;
                     }
-                    if(stmt instanceof Throw || stmt instanceof Catch)
-                        exception_found = true;
                 }
             }
         });
@@ -222,10 +249,11 @@ public class PreprocessResult {
     }
     public void init() {
         first_pass();
+        // MyDumper.dump(this);
+        logger.info("---------------------------------------");
         method_init();
         count_pass();
         gather_static_pointers();
-        // MyDumper.dump(this);
         for(var wvar: wvars) {
             wvar.pointee = new PointsToSet(object_num);
         }

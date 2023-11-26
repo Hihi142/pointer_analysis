@@ -21,19 +21,19 @@ public class MyDumper {
             {
                 var inv = (Invoke)stmt;
                 logger.info("    // Calling ID: {}", inv.call_id);
-                logger.info("    // Possible Callees: {} {}", inv.callee_versions.size(), inv.callees.size());
-                for(int i = 0; i < inv.callee_versions.size(); ++i)
-                    logger.info("      ({}, {})", inv.callees.get(i).jm.getName(), inv.callee_versions.get(i));
+                // logger.info("    // Possible Callees: {} {}", inv.callee_versions.size(), inv.callees.size());
+                // for(int i = 0; i < inv.callee_versions.size(); ++i)
+                //     logger.info("      ({}, {})", inv.callees.get(i).jm.getName(), inv.callee_versions.get(i));
             }
             if(stmt instanceof New)
                 logger.info("    // Object ID: {}",  (((New)stmt).object_id));
-            // var wlval = stmt.getDef();
-            // if(wlval.isPresent())
-            // {
-            //     var lval = wlval.get();
-            //     if(lval instanceof Var)
-            //         logger.info("    // Pointer ID: {}", ( ((Var)lval).var_id ));
-            // } 
+            var wlval = stmt.getDef();
+            if(wlval.isPresent())
+            {
+                var lval = wlval.get();
+                if(lval instanceof Var)
+                    logger.info("    // Pointer ID: {}", ( ((Var)lval).var_id ));
+            } 
         }
     }
     static void dump(PreprocessResult ppr) {
@@ -44,15 +44,15 @@ public class MyDumper {
                 if(!method.isAbstract())
                 {
                     var ir = method.getIR();
-                    logger.info("    Called times: {}", method.wrapper.versions);
-                    logger.info("    Possible Callers: {}", method.wrapper.returnee.size());
-                    for(var stmt: method.wrapper.returnee)
-                    {
-                        if(stmt == null) logger.info("      Ghost Caller");
-                        else logger.info("      {}", stmt.get_stmt_id());
-                    }
-                    logger.info("    Param List: {}", ir.getParams());
-                    logger.info("    this-pointer: {}", ir.getThis());
+                    // logger.info("    Called times: {}", method.wrapper.versions);
+                    // logger.info("    Possible Callers: {}", method.wrapper.returnee.size());
+                    // for(var stmt: method.wrapper.returnee)
+                    // {
+                    //     if(stmt == null) logger.info("      Ghost Caller");
+                    //     else logger.info("      {}", stmt.get_stmt_id());
+                    // }
+                    // logger.info("    Param List: {}", ir.getParams());
+                    // logger.info("    this-pointer: {}", ir.getThis());
                     dump_method(method.getIR());
                 }
             });

@@ -40,8 +40,7 @@ public class MyAnalyzer {
     }
     static boolean call_possible(Var caller, int version, JMethod callee) {
         var callee_class = callee.getDeclaringClass();
-        var var_id_list = caller.var_id;
-        var var_id =var_id_list.get(version);
+        var var_id = caller.var_id.get(version);
         // for(var var_id: var_id_list) {
             var obj_list = wvars.get(var_id).pointee.lst;
             for(var obj: obj_list) {
@@ -57,8 +56,7 @@ public class MyAnalyzer {
     static void update(Stmt stmt, WMethod wjm, int version) {
         if(stmt instanceof DefinitionStmt)
         {
-            if(stmt instanceof New) 
-            {
+            if(stmt instanceof New) {
                 var nw = (New)stmt;
                 int ptr_id = nw.getLValue().var_id.get(version);
                 int obj_id = nw.object_id.get(version);
@@ -66,14 +64,12 @@ public class MyAnalyzer {
                 // logger.info("New:  ptr_id: {} <- obj_id: {}", ptr_id, obj_id);
                 wvars.get(ptr_id).pointee.add(obj_id);
             }
-            else if(stmt instanceof Copy)
-            {
+            else if(stmt instanceof Copy) {
                 var cp = (Copy)stmt;
                 // logger.info("Copy!");
                 merge(cp.getLValue(), cp.getRValue(), version);
             }
-            else if(stmt instanceof StoreField)
-            {
+            else if(stmt instanceof StoreField) {
                 var sf = (StoreField)stmt;
                 var r = sf.getRValue();
                 var l = sf.getLValue();
@@ -97,8 +93,7 @@ public class MyAnalyzer {
                     merge(merger, mergee);
                 }
             }
-            else if(stmt instanceof LoadField) 
-            {
+            else if(stmt instanceof LoadField) {
                 var lf = (LoadField)stmt;
                 var l = lf.getLValue();
                 var r = lf.getRValue();
@@ -122,8 +117,7 @@ public class MyAnalyzer {
                     merge(merger, mergee);
                 }
             }
-            else if(stmt instanceof StoreArray)
-            {
+            else if(stmt instanceof StoreArray) {
                 var sa = (StoreArray)stmt;
                 int base_id = sa.getLValue().getBase().var_id.get(version);
                 int rid = sa.getRValue().var_id.get(version);
@@ -157,8 +151,7 @@ public class MyAnalyzer {
                     }
                 }
             }
-            else if(stmt instanceof LoadArray)
-            {
+            else if(stmt instanceof LoadArray) {
                 var la = (LoadArray)stmt;
                 int base_id = la.getRValue().getBase().var_id.get(version);
                 int lid = la.getLValue().var_id.get(version);
@@ -198,12 +191,14 @@ public class MyAnalyzer {
                 var inv_stmt = (Invoke)stmt;
                 var inv_expr = inv_stmt.getInvokeExp();
                 var arg_list = inv_expr.getArgs();
+                var callees = inv_stmt.callees.get(version);
+                var callee_versions = inv_stmt.callee_versions.get(version);
                 if(inv_expr instanceof InvokeStatic)
                 {
-                    for(int j = 0; j < inv_stmt.callees.size(); ++j)
+                    for(int j = 0; j < callees.size(); ++j)
                     {
-                        var callee = inv_stmt.callees.get(j).jm;
-                        var callee_version = inv_stmt.callee_versions.get(j);
+                        var callee = callees.get(j).jm;
+                        var callee_version = callee_versions.get(j);
                         if(callee.isAbstract()) continue;
                         var param_list = callee.getIR().getParams();
                         for(int i = 0; i < param_list.size(); ++i) {
@@ -216,13 +211,12 @@ public class MyAnalyzer {
                 }
                 else 
                 {
-                    for(int j = 0; j < inv_stmt.callees.size(); ++j)
+                    for(int j = 0; j < callees.size(); ++j)
                     {
-                        var callee = inv_stmt.callees.get(j).jm;
-                        var callee_version = inv_stmt.callee_versions.get(j);
+                        var callee = callees.get(j).jm;
+                        var callee_version = callee_versions.get(j);
                         if(callee.isAbstract()) continue;
                         if(!call_possible( ((InvokeInstanceExp)inv_expr).getBase(), version, callee)) continue;
-
                         var param_list = callee.getIR().getParams();
                         for(int i = 0; i < param_list.size(); ++i) {
                             var merger = param_list.get(i);
@@ -234,7 +228,6 @@ public class MyAnalyzer {
                         var ths = callee.getIR().getThis();
                         // assert(ths != null);
                         merge(ths.var_id.get(callee_version), ((InvokeInstanceExp)inv_expr).getBase().var_id.get(version));
-
                     }
                 }
             }
@@ -245,35 +238,35 @@ public class MyAnalyzer {
             var retval = ret.getValue();
             var jm = wjm.jm;
             if(retval == null || jm.isConstructor()) return;
-            var caller_list = wjm.returnee;
-            // for(var caller: caller_list) {
-                var caller = caller_list.get(version);
-                // if(caller == null) continue;
-                if(caller == null) return;
+            var caller_list = wjm.returnee.get(version);
+            var caller_version_list = wjm.returnee_version.get(version);
+            for(int j = 0; j < caller_list.size(); ++j) {
+                var caller = caller_list.get(j);
+                var caller_version = caller_version_list.get(j);
+                if(caller == null) continue;
+
                 var def = caller.getDef();
                 if(def.isPresent())
                 {
-                    var receiver = def.get();
+                    var receiver = (Var)def.get();
                     var inv_expr = caller.getRValue();
                     // logger.info("{} called by {}?", stmt.get_stmt_id(), caller.get_stmt_id());
                     if(inv_expr instanceof InvokeStatic || jm.isStatic())
-                    {
-                        for(var receiver_id: ((Var)receiver).var_id)
-                            merge(receiver_id, retval.var_id.get(version));
-                    }
+                        merge(receiver.var_id.get(caller_version), retval.var_id.get(version));
                     // if(inv_expr instanceof InvokeInstanceExp)
                     // assert(receiver instanceof Var);
                     else
                     {
                         var caller_var = ((InvokeInstanceExp)caller.getRValue()).getBase();
-                        var receiver_ids = ((Var)receiver).var_id;
-                        for(int i = 0; i < receiver_ids.size(); ++i)
-                            if(call_possible(caller_var, i, jm))
-                                merge(receiver_ids.get(i), retval.var_id.get(version));
+                        // var receiver_ids = ((Var)receiver).var_id;
+                        // for(int i = 0; i < receiver_ids.size(); ++i)
+                            if(call_possible(caller_var, caller_version, jm))
+                                merge( receiver.var_id.get(caller_version), retval.var_id.get(version) );
                         // for(var receiver_id: ((Var)receiver).var_id)
                             // merge(receiver_id, retval.var_id.get(version));
                     }
                 }
+            }
         }
     }
 
@@ -315,7 +308,7 @@ public class MyAnalyzer {
                         ts.add(wobjects.get(obj_id).tester_id); 
             }
             res.put(test_id, ts);
-            logger.info("{}: {}", test_id, ts);
+            // logger.info("{}: {}", test_id, ts);
         }
         return res;
     }
