@@ -57,7 +57,8 @@ public class Invoke extends DefinitionStmt<Var, InvokeExp>
     public int call_id;
     public ArrayList< ArrayList<WMethod> >callees = new ArrayList<>();
     public ArrayList< ArrayList<Integer> >callee_versions = new ArrayList<>();
-
+    
+    public ArrayList<JMethod>all_callees = new ArrayList<>();
     
     @Nullable
     private final Var result;

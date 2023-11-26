@@ -40,13 +40,6 @@ public class PointerAnalysis extends PointerAnalysisTrivial
         PointerAnalysisResult trivial_typing = super.trivial_typing(ppr);
         
         PointerAnalysisResult res = null;
-        try {
-            MyAnalyzer.CG = World.get().getResult(CallGraphBuilder.ID);
-        } catch(Exception e) {
-            res = trivial_typing;
-            dump(res);
-            return res;
-        }
 
         try {
             ppr.init();

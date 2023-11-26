@@ -9,19 +9,17 @@ import pascal.taie.World;
 import pascal.taie.ir.stmt.*;
 import pascal.taie.language.type.*;
 import pascal.taie.ir.exp.*;
-import pascal.taie.analysis.graph.callgraph.*;
 import pascal.taie.analysis.misc.IRDumper;
 import pascal.taie.language.classes.JMethod;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import pascal.taie.language.classes.ClassHierarchy;;
+import pascal.taie.language.classes.ClassHierarchy;
 
 public class MyAnalyzer {
     private static final Logger logger = LogManager.getLogger(IRDumper.class);
     static ArrayList<WObject> wobjects;
     static ArrayList<WVar> wvars;
-    static CallGraph<Invoke, JMethod> CG;
     static ClassHierarchy CH;
     static boolean ispointer(Type t) {
         return t instanceof ClassType || t instanceof ArrayType;
@@ -54,6 +52,7 @@ public class MyAnalyzer {
         return false;
     }
     static void update(Stmt stmt, WMethod wjm, int version) {
+        // logger.info("{} {} {}", stmt.get_stmt_id(), wjm.jm.getName(), version);
         if(stmt instanceof DefinitionStmt)
         {
             if(stmt instanceof New) {
@@ -88,6 +87,7 @@ public class MyAnalyzer {
                 }
                 else if(l instanceof StaticFieldAccess)
                 {
+                    if(!ispointer(l.getType()) || !ispointer(r.getType())) return;
                     int merger = l.getFieldRef().resolveNullable().var_id;
                     int mergee = r.var_id.get(version);
                     merge(merger, mergee);
@@ -112,6 +112,7 @@ public class MyAnalyzer {
                 }
                 else if(r instanceof StaticFieldAccess)
                 {
+                    if(!ispointer(l.getType()) || !ispointer(r.getType())) return;
                     int merger = l.var_id.get(version);
                     int mergee = r.getFieldRef().resolveNullable().var_id;
                     merge(merger, mergee);

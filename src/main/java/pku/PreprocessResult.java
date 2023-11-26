@@ -10,6 +10,7 @@ import pascal.taie.ir.exp.InvokeStatic;
 import pascal.taie.ir.exp.Var;
 import pascal.taie.ir.stmt.*;
 import pascal.taie.language.type.Type;
+import pascal.taie.language.classes.ClassHierarchy;
 import pascal.taie.language.type.ArrayType;
 import pascal.taie.language.type.ClassType;
 import pascal.taie.language.classes.JMethod;
@@ -25,6 +26,7 @@ public class PreprocessResult {
 
     private static final Logger logger = LogManager.getLogger(IRDumper.class);
 
+    public ClassHierarchy CH;
     public final Map<New, Integer>obj_ids;
     public final Map<Integer, Var>test_pts;
     public void alloc(New stmt, int id) { obj_ids.put(stmt, id); }
@@ -77,7 +79,23 @@ public class PreprocessResult {
         });
     }
 
-
+    public void set_all_callees_of(Invoke inv) {
+        var jm = inv.getMethodRef().resolve();
+        var name = jm.getName();
+        var typs = jm.getParamTypes();
+        var caller_class = jm.getDeclaringClass();
+        if(!caller_class.isApplication()) return;
+        World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
+            if(CH.isSubclass(caller_class, jclass)) {
+                    for(var jmethod: jclass.getDeclaredMethods()) {
+                    if(jmethod.isAbstract()) continue;
+                    if(!name.equals(jmethod.getName())) continue;
+                    if(!typs.equals(jmethod.getParamTypes())) continue;
+                    inv.all_callees.add(jmethod);
+                }
+            }
+        });
+    }
     int[] stk = new int[1000000];
     int top = 0;
     long get_context_value() {
@@ -92,7 +110,7 @@ public class PreprocessResult {
         for(var stmt: stmts) {
             if(!(stmt instanceof Invoke)) continue;
             var inv = (Invoke)stmt;
-            var callee_list = MyAnalyzer.CG.getCalleesOf(inv);
+            var callee_list = inv.all_callees;
             // logger.info("   invoke {}", callee_list.size());
 
             for(var callee: callee_list)
@@ -189,6 +207,7 @@ public class PreprocessResult {
                     stmt.set_stmt_id(stmt_num++);
                     if(stmt instanceof Invoke) {
                         var invoke = (Invoke)stmt;
+                        set_all_callees_of(invoke);
                         invoke.call_id = ++call_num;
                     }
                 }
@@ -248,6 +267,7 @@ public class PreprocessResult {
         });
     }
     public void init() {
+        CH = World.get().getClassHierarchy();
         first_pass();
         // MyDumper.dump(this);
         logger.info("---------------------------------------");
