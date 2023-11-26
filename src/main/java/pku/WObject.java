@@ -32,7 +32,8 @@ public class WObject {
                     if(is_pointer(jf.getType())) 
                     {
                         int id = PreprocessResult.var_num++;
-                        field.put(jf.getName(), id);
+                        var str = jc.getName() + "::" + jf.getName();
+                        field.put(str, id);
                         PreprocessResult.wvars.add(new WVar(null, id));
                     }
                 }

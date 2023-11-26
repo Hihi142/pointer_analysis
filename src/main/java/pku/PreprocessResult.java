@@ -154,7 +154,7 @@ public class PreprocessResult {
                 if(method.isAbstract()) continue;
                 var wm = method.wrapper;
                 if(wm == null) continue;
-                if(wm.versions > 0) continue;
+                // if(wm.versions > 0) continue;
                 int version = wm.new_version();
                 top = 1;
                 stk[top] = ++call_num;
@@ -179,6 +179,7 @@ public class PreprocessResult {
     static int stmt_num = 0;
     static int object_num = 0;
     static int var_num = 0;
+    static boolean case_found = false;
 
     void first_pass() {
         World.get().getClassHierarchy().applicationClasses().forEach(jclass->{
@@ -202,7 +203,8 @@ public class PreprocessResult {
                         }
                     }
                     if(stmt instanceof Cast) {
-                        throw(new NullPointerException());
+                        case_found = true;
+                        // throw(new NullPointerException());
                     }
                     stmt.set_stmt_id(stmt_num++);
                     if(stmt instanceof Invoke) {

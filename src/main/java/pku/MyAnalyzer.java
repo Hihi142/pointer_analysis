@@ -77,7 +77,7 @@ public class MyAnalyzer {
                     int base_id = ((InstanceFieldAccess)l).getBase().var_id.get(version);
                     var jf = l.getFieldRef().resolveNullable();
                     if(!ispointer(jf.getType())) return;
-                    var str = jf.getName();
+                    var str = jf.getDeclaringClass().getName() + "::" + jf.getName();
                     int rid = r.var_id.get(version);
                     for(var obj: wvars.get(base_id).pointee.lst) {
                         var ptr_id = wobjects.get(obj).field.get(str);
@@ -102,7 +102,7 @@ public class MyAnalyzer {
                     int base_id = ((InstanceFieldAccess)r).getBase().var_id.get(version);
                     var jf = r.getFieldRef().resolveNullable();
                     if(!ispointer(jf.getType())) return;
-                    var str = r.getFieldRef().resolveNullable().getName();
+                    var str = jf.getDeclaringClass().getName() + "::" + jf.getName();
                     int lid = l.var_id.get(version);
                     for(var obj: wvars.get(base_id).pointee.lst) {
                         var ptr_id = wobjects.get(obj).field.get(str);
@@ -222,12 +222,10 @@ public class MyAnalyzer {
                         for(int i = 0; i < param_list.size(); ++i) {
                             var merger = param_list.get(i);
                             var mergee = arg_list.get(i);
-                            // logger.info("{} merges {}", merger.getName(), mergee.getName());
                             if(!ispointer(merger.getType()) || !ispointer(mergee.getType())) continue;
                             merge(merger.var_id.get(callee_version), mergee.var_id.get(version));
                         }
                         var ths = callee.getIR().getThis();
-                        // assert(ths != null);
                         merge(ths.var_id.get(callee_version), ((InvokeInstanceExp)inv_expr).getBase().var_id.get(version));
                     }
                 }
